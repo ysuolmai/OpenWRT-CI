@@ -96,5 +96,10 @@ for line in "${provided_config_lines[@]}"; do
     echo "$line" >> ./.config
 done
 
+$new_WRT_IP="192.168.1.1"
+
+sed -i "s/192\.168\.[0-9]*\.[0-9]*/$new_WRT_IP/g" $CFG_FILE
+
+
 
 
