@@ -50,3 +50,51 @@ fi
 if [[ $WRT_TARGET == "Qualcom" ]]; then
 	sed -i "s/CONFIG_PACKAGE_autosamba=y/CONFIG_PACKAGE_autosamba=n/g" ./.config
 fi
+
+
+
+
+#process .config file
+sed -i '/usb/d' ./.config
+#sed -i '/passwall/d' ./.config
+sed -i '/v2ray/d' ./.config
+sed -i '/sing-box/d' ./.config
+sed -i '/SINGBOX/d' ./.config
+sed -i '/openclash/d' ./.config
+#sed -i '/qihoo_v6/d' ./.config
+#sed -i '/redmi_ax5=y/d' ./.config
+#sed -i '/xiaomi_ax3600/d' ./.config
+#sed -i '/xiaomi_ax9000/d' ./.config
+#sed -i '/jdc_ax1800-pro/d' ./.config
+#sed -i '/xiaomi_ax1800/d' ./.config
+#sed -i '/cmiot_ax18/d' ./.config
+sed -i '/uugamebooster/d' ./.config
+sed -i '/autosamba/d' ./.config
+sed -i '/samba/d' ./.config
+sed -i '/zerotier/d' ./.config
+sed -i '/homeproxy/d' ./.config
+
+
+provided_config_lines=(
+"CONFIG_PACKAGE_luci-app-ddns-go=y"
+"CONFIG_PACKAGE_cpufreq=y"
+"CONFIG_PACKAGE_luci-app-cpufreq=y"
+"CONFIG_PACKAGE_luci-i18n-cpufreq-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-zerotier=y"
+"CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-adguardhome=y"
+#"CONFIG_PACKAGE_luci-app-passwall=y"
+#"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-ssr-plus=y"
+"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-poweroff=y"
+"CONFIG_PACKAGE_luci-i18n-poweroff-zh-cn=y"
+)
+
+# Append lines to the .config file
+for line in "${provided_config_lines[@]}"; do
+    echo "$line" >> ./.config
+done
+
+
+
