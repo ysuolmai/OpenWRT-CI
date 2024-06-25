@@ -32,7 +32,7 @@ UPDATE_PACKAGE "ssr-plus" "fw876/helloworld" "master"
 UPDATE_PACKAGE "gecoosac" "lwb1978/openwrt-gecoosac" "main"
 
 if [[ $WRT_URL != *"lede"* ]]; then
-	UPDATE_PACKAGE "homeproxy" "immortalwrt/homeproxy" "dev"
+	UPDATE_PACKAGE "homeproxy" "VIKINGYFY/homeproxy" "dev"
 	UPDATE_PACKAGE "mihomo" "morytyann/OpenWrt-mihomo" "main" "pkg"
 fi
 
@@ -56,7 +56,7 @@ UPDATE_VERSION() {
 
     echo "$PKG_NAME version update has started!"
 
-    local PKG_VER=$(curl -sL "https://api.github.com/repos/$PKG_REPO/releases" | jq -r "map(select(.prerelease|$PKG_MARK)) | first | .tag_name")
+    local PKG_VER=$(curl -sL "https://api.github.com/repos/$PKG_REPO/releases/latest" | jq -r "map(select(.prerelease|$PKG_MARK)) | first | .tag_name")
     local NEW_VER=$(echo $PKG_VER | sed "s/.*v//g; s/_/./g")
     local NEW_HASH=$(curl -sL "https://codeload.github.com/$PKG_REPO/tar.gz/$PKG_VER" | sha256sum | cut -b -64)
 
