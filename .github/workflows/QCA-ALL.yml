@@ -28,10 +28,10 @@ jobs:
     name: ${{matrix.TARGET}}_${{matrix.SOURCE}}
     strategy:
       fail-fast: false
-      max-parallel: 3
+      #max-parallel: 4
       matrix:
-        TARGET: [Qualcom]
-        SOURCE: [coolsnowwolf/lede, King-Of-Knights/openwrt-6.x]
+        TARGET: [Qualcommax]
+        SOURCE: [King-Of-Knights/openwrt-6.x, coolsnowwolf/lede]
         include:
           - SOURCE: coolsnowwolf/lede
             BRANCH: master
