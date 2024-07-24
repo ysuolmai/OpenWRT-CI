@@ -55,7 +55,7 @@ else
 fi
 
 keywords_to_delete=(
-"usb"
+#"usb"
 "passwall"
 "v2ray"
 "sing-box"
