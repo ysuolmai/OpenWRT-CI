@@ -54,8 +54,9 @@ else
 	echo "CONFIG_PACKAGE_luci-app-homeproxy=y" >> ./.config
 fi
 
+
+
 keywords_to_delete=(
-#"usb"
 "passwall"
 "v2ray"
 "sing-box"
@@ -71,10 +72,14 @@ keywords_to_delete=(
 "jdcloud_ax6600"
 "linksys_mr7350"
 "uugamebooster"
-"samba"
-"autosamba"
 "luci-app-homeproxy"
 )
+
+if [[ $WRT_TARGET == *"WIFI-NO"* ]]; then
+	keywords_to_delete+=("usb")
+ 	keywords_to_delete+=("samba")
+  	keywords_to_delete+=("autosamba")
+fi
 
 for line in "${keywords_to_delete[@]}"; do
     sed -i "/$line/d" ./.config
