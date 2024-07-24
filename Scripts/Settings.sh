@@ -63,6 +63,7 @@ keywords_to_delete=(
 "ddns"
 "SINGBOX"
 "redmi_ax5=y"
+"cmcc-rm2"
 "xiaomi_ax3600"
 "xiaomi_ax9000"
 "xiaomi_ax1800"
