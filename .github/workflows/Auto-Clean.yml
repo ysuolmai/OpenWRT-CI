@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       NUMBER:
-        default: '8'
+        default: '4'
         required: false
         type: string
 
