@@ -74,6 +74,7 @@ keywords_to_delete=(
 "linksys_mr7350"
 "uugamebooster"
 "luci-app-homeproxy"
+"CONFIG_TARGET_INITRAMFS"
 )
 
 if [[ $WRT_TARGET == *"WIFI-NO"* ]]; then
@@ -104,6 +105,7 @@ provided_config_lines=(
 "CONFIG_PACKAGE_luci-app-ttyd=y"
 "CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y"
 "CONFIG_PACKAGE_ttyd=y"
+"CONFIG_TARGET_INITRAMFS=n"
 #"CONFIG_PACKAGE_luci-app-vlmcsd=y"
 #"CONFIG_PACKAGE_vlmcsd=y"
 #"CONFIG_PACKAGE_luci-i18n-vlmcsd-zh-cn=y"
