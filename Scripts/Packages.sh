@@ -44,6 +44,7 @@ fi
 
 UPDATE_PACKAGE "luci-app-adguardhome" "kongfl888/luci-app-adguardhome" "master"
 UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "master"
+UPDATE_PACKAGE "luci-app-tailsacle" "asvow/luci-app-tailscale" "main"
 #UPDATE_PACKAGE "luci-app-vlmcsd" "cokebar/luci-app-vlmcsd" "master"
 #UPDATE_PACKAGE "vlmcsd" "cokebar/openwrt-vlmcsd" "master"
 
