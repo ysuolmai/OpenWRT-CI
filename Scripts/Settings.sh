@@ -33,3 +33,94 @@ if [[ $WRT_TARGET == *"IPQ"* ]]; then
 	echo "CONFIG_ATH11K_MEM_PROFILE_1G=n" >> ./.config
 	echo "CONFIG_ATH11K_MEM_PROFILE_512M=y" >> ./.config
 fi
+
+#diy
+
+
+keywords_to_delete=(
+#"passwall"
+#"v2ray"
+#"sing-box"
+"ddns"
+#"SINGBOX"
+#"redmi_ax5=y"
+"xiaomi_ax3600"
+"xiaomi_ax9000"
+"xiaomi_ax1800"
+#"cmiot_ax18"
+"glinet_gl-ax1800"
+"glinet_gl-axt1800"
+"jdcloud_ax6600"
+"linksys_mr7350"
+"uugamebooster"
+#"luci-app-homeproxy"
+#"CONFIG_TARGET_INITRAMFS"
+"tailscale"
+"advancedplus"
+"wolplus"
+"luci-theme-design"
+"luci-theme-alpha"
+"luci-app-alpha-config"
+)
+
+if [[ $WRT_TARGET == *"WIFI-NO"* ]]; then
+  	keywords_to_delete+=("usb")
+ 	keywords_to_delete+=("samba")
+  	keywords_to_delete+=("autosamba")
+fi
+
+for line in "${keywords_to_delete[@]}"; do
+    sed -i "/$line/d" ./.config
+done
+
+provided_config_lines=(
+#"CONFIG_PACKAGE_luci-app-ssr-plus=y"
+#"CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-zerotier=y"
+"CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-adguardhome=y"
+"CONFIG_PACKAGE_luci-i18n-adguardhome-zh-cn=y"
+#"CONFIG_PACKAGE_luci-app-ddns-go=y"
+#"CONFIG_PACKAGE_luci-i18n-ddns-go-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-poweroff=y"
+"CONFIG_PACKAGE_luci-i18n-poweroff-zh-cn=y"
+"CONFIG_PACKAGE_cpufreq=y"
+"CONFIG_PACKAGE_luci-app-cpufreq=y"
+"CONFIG_PACKAGE_luci-i18n-cpufreq-zh-cn=y"
+"CONFIG_PACKAGE_luci-app-ttyd=y"
+"CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y"
+"CONFIG_PACKAGE_ttyd=y"
+"CONFIG_TARGET_INITRAMFS=n"
+#"CONFIG_PACKAGE_luci-app-passwall=y"
+#"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
+#"CONFIG_PACKAGE_luci-app-vlmcsd=y"
+"CONFIG_PACKAGE_luci-app-accesscontrol=y"
+#"CONFIG_PACKAGE_luci-app-gecoosac=y"
+"CONFIG_PACKAGE_luci-app-lucky=y"
+"CONFIG_PACKAGE_luci-i18n-lucky-zh-cn=y"
+)
+
+#if [[  $WRT_TARGET == *"WIFI-YES"* ]]; then
+#	provided_config_lines+=("CONFIG_PACKAGE_luci-app-diskman=y")
+#  	provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-luci-app-diskman=y")
+#    	provided_config_lines+=("CONFIG_PACKAGE_luci-app-docker=y")
+#    	provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-docker-zh-cn=y")
+#    	provided_config_lines+=("CONFIG_PACKAGE_luci-app-dockerman=y")
+#    	provided_config_lines+=("CONFIG_PACKAGE_luci-i18n-dockerman-zh-cn=y")
+#fi
+
+# Path to the .config file
+config_file_path=".config" 
+
+# Append lines to the .config file
+for line in "${provided_config_lines[@]}"; do
+    echo "$line" >> "$config_file_path"
+done
+
+./scripts/feeds update -a
+./scripts/feeds install -a
+
+#rm -rf package/feeds/packages/shadowsocks-rust
+#cp -r package/helloworld/shadowsocks-rust package/feeds/packages/shadowsocks-rust
+find ./ -name "getifaddr.c" -exec sed -i 's/return 1;/return 0;/g' {} \;
+
