@@ -1,5 +1,7 @@
 #!/bin/bash
-
+WRT_IP="192.168.1.1"
+WRT_NAME="FishWRT"
+WRT_WIFI="FishWRT"
 #修改默认主题
 sed -i "s/luci-theme-bootstrap/luci-theme-$WRT_THEME/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
 #修改immortalwrt.lan关联IP
