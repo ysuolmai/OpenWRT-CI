@@ -60,9 +60,10 @@ keywords_to_delete=(
 "tailscale"
 "advancedplus"
 "wolplus"
-"luci-theme-design"
 "luci-theme-alpha"
 "luci-app-alpha-config"
+"luci-theme-kucat"
+"luci-app-kucat-config"
 )
 
 if [[ $WRT_TARGET == *"WIFI-NO"* ]]; then
@@ -95,7 +96,6 @@ provided_config_lines=(
 "CONFIG_TARGET_INITRAMFS=n"
 #"CONFIG_PACKAGE_luci-app-passwall=y"
 #"CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y"
-#"CONFIG_PACKAGE_luci-app-vlmcsd=y"
 "CONFIG_PACKAGE_luci-app-accesscontrol=y"
 #"CONFIG_PACKAGE_luci-app-gecoosac=y"
 "CONFIG_PACKAGE_luci-app-lucky=y"
