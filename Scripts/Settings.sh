@@ -70,6 +70,8 @@ if [[ $WRT_TARGET == *"WIFI-NO"* ]]; then
   	keywords_to_delete+=("usb")
  	keywords_to_delete+=("samba")
   	keywords_to_delete+=("autosamba")
+        keywords_to_delete+=("wpad")
+        keywords_to_delete+=("hostapd")
 fi
 
 for line in "${keywords_to_delete[@]}"; do
@@ -101,6 +103,11 @@ provided_config_lines=(
 "CONFIG_PACKAGE_luci-app-lucky=y"
 "CONFIG_PACKAGE_luci-i18n-lucky-zh-cn=y"
 )
+
+if [[ $WRT_TARGET == *"WIFI-NO"* ]]; then
+  	provided_config_lines+=("CONFIG_PACKAGE_hostapd-common=n")
+  	provided_config_lines+=("CONFIG_PACKAGE_wpad-openssl=n")
+fi
 
 #if [[  $WRT_TARGET == *"WIFI-YES"* ]]; then
 #	provided_config_lines+=("CONFIG_PACKAGE_luci-app-diskman=y")
