@@ -30,9 +30,13 @@ jobs:
 
       # 提交更改
       - name: Commit and Push Changes
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add .github/workflows/QCA-EMMC.yml
           git commit -m "Sync QCA-ALL.yml to QCA-EMMC.yml with modifications"
           git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }} HEAD:main
+
 
