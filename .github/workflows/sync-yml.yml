@@ -5,13 +5,12 @@ on:
     paths:
       - '.github/workflows/QCA-ALL.yml'
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *' # 每天 00:00 运行一次
   workflow_dispatch:
-  
-permissions:
-  contents: write
 
-  
+permissions:
+  contents: write # Allow the workflow to read/write contents
+
 jobs:
   sync-qca-files:
     runs-on: ubuntu-latest
@@ -24,11 +23,10 @@ jobs:
       # 同步并修改文件内容
       - name: Sync and Modify QCA Config
         run: |
-          # 读取 QCA-ALL.yml 的内容
           sed 's/name: QCA-ALL/name: QCA-EMMC/' .github/workflows/QCA-ALL.yml | \
           sed 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: [IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO]/' > .github/workflows/QCA-EMMC.yml
 
-      # 提交更改
+      # 使用 PAT 提交更改
       - name: Commit and Push Changes
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
@@ -38,5 +36,3 @@ jobs:
           git add .github/workflows/QCA-EMMC.yml
           git commit -m "Sync QCA-ALL.yml to QCA-EMMC.yml with modifications"
           git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }} HEAD:main
-
-
