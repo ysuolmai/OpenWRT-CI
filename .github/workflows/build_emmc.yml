@@ -1,13 +1,14 @@
-name: Modify-and-Run-QCA
+name: Build IPQ6K EMMC
 
+#CI计划
 on:
+  #自动编译：当Auto-Clean运行完成后
+  workflow_run:
+    workflows: ["Auto-Clean"]
+    types:
+      - completed
+  #手动编译
   workflow_dispatch:
-    inputs:
-      TEST_MODE:
-        description: '是否测试模式，仅修改值不保存'
-        default: 'true'
-        required: false
-        type: boolean
 
 jobs:
   modify-and-run:
@@ -29,13 +30,11 @@ jobs:
         sed -i 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: \[IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO\]/' .github/workflows/QCA-EMMC.yml
         
     - name: Print modified workflow
-      if: ${{ inputs.TEST_MODE == 'true' }}
       run: |
         echo "==== Modified Workflow ===="
         cat .github/workflows/QCA-EMMC.yml
 
     - name: Trigger modified workflow
-      if: ${{ inputs.TEST_MODE != 'true' }}
       uses: actions/github-script@v6
       with:
         script: |
