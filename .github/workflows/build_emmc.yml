@@ -1,0 +1,47 @@
+name: Modify-and-Run-QCA
+
+on:
+  workflow_dispatch:
+    inputs:
+      TEST_MODE:
+        description: '是否测试模式，仅修改值不保存'
+        default: 'true'
+        required: false
+        type: boolean
+
+jobs:
+  modify-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Modify QCA-ALL to QCA-EMMC
+      run: |
+        # 生成临时文件
+        cp .github/workflows/QCA-ALL.yml .github/workflows/QCA-EMMC.yml
+
+        # 修改名称
+        sed -i 's/name: QCA-ALL/name: QCA-EMMC/' .github/workflows/QCA-EMMC.yml
+        
+        # 修改TARGET值
+        sed -i 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: \[IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO\]/' .github/workflows/QCA-EMMC.yml
+        
+    - name: Print modified workflow
+      if: ${{ inputs.TEST_MODE == 'true' }}
+      run: |
+        echo "==== Modified Workflow ===="
+        cat .github/workflows/QCA-EMMC.yml
+
+    - name: Trigger modified workflow
+      if: ${{ inputs.TEST_MODE != 'true' }}
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: "QCA-EMMC.yml",
+            ref: context.ref
+          })
