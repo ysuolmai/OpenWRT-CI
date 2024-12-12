@@ -36,13 +36,14 @@ jobs:
 
     - name: Commit and push QCA-EMMC.yml
       env:
-        BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}
         git add .github/workflows/QCA-EMMC.yml
         git commit -m "Add QCA-EMMC workflow for temporary use"
-        git push origin $BRANCH_NAME
+        git push origin ${{ github.ref_name }}
       
     - name: Trigger modified workflow
       uses: actions/github-script@v6
