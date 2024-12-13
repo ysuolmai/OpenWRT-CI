@@ -27,7 +27,7 @@ jobs:
         
         # 修改TARGET值
         sed -i 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: \[IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO\]/' .github/workflows/QCA-EMMC.yml
-        
+
     - name: Print modified workflow
       run: |
         echo "==== Modified Workflow ===="
@@ -56,8 +56,11 @@ jobs:
           Changes include:
           - Workflow name updated from "QCA-ALL" to "QCA-EMMC".
           - TARGET modified to only include "IPQ60XX-EMMC-WIFI-YES" and "IPQ60XX-EMMC-WIFI-NO".
-        labels: ['workflow', 'automation']
-        reviewers: ['ysuolmai']
+        labels: 
+          - workflow
+          - automation
+        reviewers: 
+          - ysuolmai
 
     - name: Automatically merge PR
       uses: actions/github-script@v6
