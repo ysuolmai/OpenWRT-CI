@@ -40,8 +40,8 @@ jobs:
       env:
         PAT_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
         git remote set-url origin https://ysuolmai:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}
         git add .
         git commit -m "Add QCA-EMMC workflow for temporary use"
