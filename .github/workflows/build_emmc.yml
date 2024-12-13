@@ -10,6 +10,8 @@ on:
   #手动编译
   workflow_dispatch:
 
+permissions: write-all
+
 jobs:
   modify-and-run:
     runs-on: ubuntu-latest
