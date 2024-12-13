@@ -19,19 +19,9 @@ jobs:
 
     - name: Modify QCA-ALL to QCA-EMMC
       run: |
-        # 生成临时文件
         cp .github/workflows/QCA-ALL.yml .github/workflows/QCA-EMMC.yml
-
-        # 修改名称
         sed -i 's/name: QCA-ALL/name: QCA-EMMC/' .github/workflows/QCA-EMMC.yml
-        
-        # 修改TARGET值
         sed -i 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: \[IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO\]/' .github/workflows/QCA-EMMC.yml
-
-    - name: Print modified workflow
-      run: |
-        echo "==== Modified Workflow ===="
-        cat .github/workflows/QCA-EMMC.yml
 
     - name: Create new branch
       env:
@@ -42,38 +32,27 @@ jobs:
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add .github/workflows/QCA-EMMC.yml
         git commit -m "Add QCA-EMMC workflow for temporary use"
-        git push origin $BRANCH_NAME
+
+    - name: Push branch via API
+      env:
+        PAT_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: |
+        REPO="https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}"
+        git push --force $REPO HEAD:$BRANCH_NAME
 
     - name: Create Pull Request
-      id: create_pr
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GH_TOKEN }}
-        branch: add-qca-emmc-workflow
-        title: "Add QCA-EMMC workflow"
-        body: |
-          This PR adds the QCA-EMMC workflow for temporary use.
-          Changes include:
-          - Workflow name updated from "QCA-ALL" to "QCA-EMMC".
-          - TARGET modified to only include "IPQ60XX-EMMC-WIFI-YES" and "IPQ60XX-EMMC-WIFI-NO".
-        labels: "workflow"
-        reviewers: "ysuolmai"
-
-    - name: Automatically merge PR
-      if: steps.create_pr.outputs.pull-request-url != ''
       uses: actions/github-script@v6
       env:
-        PR_URL: ${{ steps.create_pr.outputs.pull-request-url }}
+        BRANCH_NAME: add-qca-emmc-workflow
       with:
         script: |
-          const prNumber = parseInt('${{ env.PR_URL }}'.split('/').pop());
-          const mergeResult = await github.rest.pulls.merge({
+          const { data: pullRequest } = await github.rest.pulls.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            pull_number: prNumber,
-            merge_method: 'merge'
+            head: process.env.BRANCH_NAME,
+            base: context.ref.replace('refs/heads/', ''),
+            title: "Add QCA-EMMC workflow",
+            body: "This PR adds the QCA-EMMC workflow. Changes include updated TARGET and workflow name.",
+            maintainer_can_modify: true
           });
-          if (!mergeResult.data.merged) {
-            throw new Error(`Failed to merge PR: ${mergeResult.data.message}`);
-          }
-          console.log(`PR #${prNumber} merged successfully.`);
+          console.log(`Pull Request created: ${pullRequest.html_url}`);
