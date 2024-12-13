@@ -56,14 +56,11 @@ jobs:
           Changes include:
           - Workflow name updated from "QCA-ALL" to "QCA-EMMC".
           - TARGET modified to only include "IPQ60XX-EMMC-WIFI-YES" and "IPQ60XX-EMMC-WIFI-NO".
-        labels:
-          - workflow
-          - automation
-        reviewers:
-          - ysuolmai
+        labels: "workflow"
+        reviewers: "ysuolmai"
 
     - name: Automatically merge PR
-      if: success() && steps.create_pr.outputs.pull-request-url
+      if: steps.create_pr.outputs.pull-request-url != ''
       uses: actions/github-script@v6
       env:
         PR_URL: ${{ steps.create_pr.outputs.pull-request-url }}
@@ -74,10 +71,9 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             pull_number: prNumber,
-            merge_method: 'merge' // 可选: merge, squash, rebase
+            merge_method: 'merge'
           });
           if (!mergeResult.data.merged) {
             throw new Error(`Failed to merge PR: ${mergeResult.data.message}`);
-          } else {
-            console.log(`PR #${prNumber} merged successfully.`);
           }
+          console.log(`PR #${prNumber} merged successfully.`);
