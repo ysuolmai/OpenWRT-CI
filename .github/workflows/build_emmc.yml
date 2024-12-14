@@ -50,7 +50,7 @@ jobs:
 	  run: |
 		echo "Verifying branch existence..."
 		REPO="https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}"
-	    git ls-remote --heads $REPO $BRANCH_NAME
+	    	git ls-remote --heads $REPO $BRANCH_NAME
 
 	- name: Create Pull Request
 	  uses: actions/github-script@v6
