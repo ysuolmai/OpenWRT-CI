@@ -38,7 +38,7 @@ jobs:
         PAT_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         REPO="https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}"
-        git push --force $REPO HEAD:$BRANCH_NAME
+        git push --force $REPO $BRANCH_NAME:$BRANCH_NAME
 
     - name: Create Pull Request
       uses: actions/github-script@v6
