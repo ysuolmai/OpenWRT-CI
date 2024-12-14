@@ -1,10 +1,10 @@
 name: Build IPQ6K EMMC
 
 on:
-	workflow_run:
-		workflows: ["Auto-Clean"]
-		types:
-		  - completed
+    workflow_run:
+	workflows: ["Auto-Clean"]
+	types:
+            - completed
 	workflow_dispatch:
 
 permissions: write-all
