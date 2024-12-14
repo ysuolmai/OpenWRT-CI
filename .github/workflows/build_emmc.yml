@@ -7,85 +7,87 @@ permissions: write-all
 
 jobs:
   modify-and-create-pr:
-    runs-on: ubuntu-latest
+	runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+	steps:
+	- name: Checkout repository
+	  uses: actions/checkout@v3
 
-    - name: Modify QCA-ALL to QCA-EMMC
-      run: |
-        echo "Modifying workflow files..."
-        cp .github/workflows/QCA-ALL.yml .github/workflows/QCA-EMMC.yml
-        sed -i 's/name: QCA-ALL/name: QCA-EMMC/' .github/workflows/QCA-EMMC.yml
-        sed -i 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: \[IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO\]/' .github/workflows/QCA-EMMC.yml
-        echo "Modified workflow files successfully."
+	- name: Modify QCA-ALL to QCA-EMMC
+	  run: |
+		echo "Modifying workflow files..."
+		cp .github/workflows/QCA-ALL.yml .github/workflows/QCA-EMMC.yml
+		sed -i 's/name: QCA-ALL/name: QCA-EMMC/' .github/workflows/QCA-EMMC.yml
+		sed -i 's/TARGET: \[IPQ60XX-WIFI-YES, IPQ60XX-WIFI-NO, IPQ807X-WIFI-YES, IPQ807X-WIFI-NO\]/TARGET: \[IPQ60XX-EMMC-WIFI-YES, IPQ60XX-EMMC-WIFI-NO\]/' .github/workflows/QCA-EMMC.yml
+		echo "Modified workflow files successfully."
 
-    - name: Configure Git user
-      run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-      
-    - name: Create new branch
-      env:
-        BRANCH_NAME: add-qca-emmc-workflow
-      run: |
-        echo "Creating new branch $BRANCH_NAME..."
-        git checkout -b $BRANCH_NAME
-        git add .github/workflows/QCA-EMMC.yml
-        git commit -m "Add QCA-EMMC workflow for temporary use"
-        echo "Branch created and changes committed."
+	- name: Configure Git user
+	  run: |
+		git config user.name 'github-actions[bot]'
+		git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-    - name: Push branch to remote
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: |
-        echo "Pushing branch $BRANCH_NAME..."
-        git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}
-        git push --set-upstream origin ${BRANCH_NAME}
-        echo "Branch pushed successfully."
+	- name: Create new branch and commit changes
+	  env:
+		BRANCH_NAME: add-qca-emmc-workflow
+	  run: |
+		echo "Creating new branch $BRANCH_NAME..."
+		git checkout -b $BRANCH_NAME
+		git add .github/workflows/QCA-EMMC.yml
+		git commit -m "Add QCA-EMMC workflow for temporary use"
+		echo "Branch created and changes committed."
 
-    - name: Verify branch existence
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: |
-        echo "Verifying branch existence..."
-        REPO_URL="https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}"
-        branches=$(git ls-remote --heads $REPO_URL $BRANCH_NAME)
-        if [ -z "$branches" ]; then
-          echo "Branch $BRANCH_NAME does not exist."
-          exit 1
-        else
-          echo "Branch $BRANCH_NAME exists."
-        fi
+	- name: Push branch to remote
+	  env:
+		GH_TOKEN: ${{ secrets.GH_TOKEN }}
+		BRANCH_NAME: add-qca-emmc-workflow
+	  run: |
+		echo "Pushing branch $BRANCH_NAME..."
+		git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}
+		git push --set-upstream origin $BRANCH_NAME
+		echo "Branch pushed successfully."
+
+	- name: Verify branch existence
+	  env:
+		GH_TOKEN: ${{ secrets.GH_TOKEN }}
+	    BRANCH_NAME: add-qca-emmc-workflow
+	  run: |
+		echo "Verifying branch existence..."
+		REPO_URL="https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}"
+		branches=$(git ls-remote --heads $REPO_URL $BRANCH_NAME)
+		if [ -z "$branches" ]; then
+			echo "Branch $BRANCH_NAME does not exist."
+			exit 1
+		else
+			echo "Branch $BRANCH_NAME exists."
+		fi
 
     - name: Create Pull Request
-      uses: actions/github-script@v6
-      env:
-        BRANCH_NAME: add-qca-emmc-workflow
-      with:
-        script: |
-          const owner = context.repo.owner;
-          const repo = context.repo.repo;
-          const head = process.env.BRANCH_NAME;
-          const base = context.ref.replace('refs/heads/', '');
-          
-          console.log("Creating pull request with the following parameters:");
-          console.log(`owner: ${owner}`);
-          console.log(`repo: ${repo}`);
-          console.log(`head: ${head}`);
-          console.log(`base: ${base}`);
-          console.log(`title: Add QCA-EMMC workflow`);
-          console.log(`body: This PR adds the QCA-EMMC workflow. Changes include updated TARGET and workflow name.`);
-          
-          const { data: pullRequest } = await github.rest.pulls.create({
-            owner: owner,
-            repo: repo,
-            head: head,
-            base: base,
-            title: "Add QCA-EMMC workflow",
-            body: "This PR adds the QCA-EMMC workflow. Changes include updated TARGET and workflow name.",
-            maintainer_can_modify: true
-          });
-          
-          console.log(`Pull Request created: ${pullRequest.html_url}`);
+	  uses: actions/github-script@v6
+	  env:
+		BRANCH_NAME: add-qca-emmc-workflow
+	  with:
+		script: |
+		  const owner = context.repo.owner;
+		  const repo = context.repo.repo;
+		  const head = process.env.BRANCH_NAME;
+		  const base = context.ref.replace('refs/heads/', '');
+		  
+		  console.log("Creating pull request with the following parameters:");
+		  console.log(`owner: ${owner}`);
+		  console.log(`repo: ${repo}`);
+		  console.log(`head: ${head}`);
+		  console.log(`base: ${base}`);
+		  console.log(`title: Add QCA-EMMC workflow`);
+		  console.log(`body: This PR adds the QCA-EMMC workflow. Changes include updated TARGET and workflow name.`);
+		  
+		  const { data: pullRequest } = await github.rest.pulls.create({
+			owner: owner,
+			repo: repo,
+		    head: head,
+			base: base,
+			title: "Add QCA-EMMC workflow",
+			body: "This PR adds the QCA-EMMC workflow. Changes include updated TARGET and workflow name.",
+			maintainer_can_modify: true
+		  });
+		  
+		  console.log(`Pull Request created: ${pullRequest.html_url}`);
