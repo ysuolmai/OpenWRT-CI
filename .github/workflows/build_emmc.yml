@@ -1,11 +1,13 @@
 name: Build IPQ6K EMMC
 
 on:
-    workflow_run:
-	workflows: ["Auto-Clean"]
-	types:
-            - completed
-	workflow_dispatch:
+  #自动编译：当Auto-Clean运行完成后
+  workflow_run:
+    workflows: ["Auto-Clean"]
+    types:
+      - completed
+  #手动编译
+  workflow_dispatch:
 
 permissions: write-all
 
