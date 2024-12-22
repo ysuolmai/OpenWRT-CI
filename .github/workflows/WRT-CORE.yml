@@ -200,7 +200,7 @@ jobs:
           echo "======================="
 
       - name: Get Kernel Version
-         run: |
+        run: |
           cd ./wrt/ && mkdir ./upload/
           MANIFEST_FILE=$(find ./bin/targets/ -type f -name "*.manifest" -not -path "*/packages/*" | head -n 1)
           if [[ $WRT_TEST != 'true' ]]; then
