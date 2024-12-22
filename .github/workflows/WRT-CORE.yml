@@ -199,6 +199,20 @@ jobs:
           du -h --max-depth=1
           echo "======================="
 
+      - name: Get Kernel Version
+         run: |
+          cd ./wrt/ && mkdir ./upload/
+          MANIFEST_FILE=$(find ./bin/targets/ -type f -name "*.manifest" -not -path "*/packages/*" | head -n 1)
+          if [[ $WRT_TEST != 'true' ]]; then
+            if [ -n "$MANIFEST_FILE" ]; then
+                echo "Manifest file found: $MANIFEST_FILE"
+                KERNEL=$(grep ^kernel "$MANIFEST_FILE" | cut -d - -f2 | tr -d ' ')
+                echo "KERNEL=$KERNEL" >> $GITHUB_ENV
+            else
+                echo "No manifest file found"
+            fi
+          fi
+
       - name: Package Firmware
         run: |
           cd ./wrt/ && mkdir ./upload/
@@ -212,7 +226,7 @@ jobs:
               for FILE in $(find ./bin/targets/ -type f -iname "*$TYPE*.*") ; do
                 EXT=$(basename $FILE | cut -d '.' -f 2-)
                 NAME=$(basename $FILE | cut -d '.' -f 1 | grep -io "\($TYPE\).*")
-                NEW_FILE="$WRT_VER"_"$NAME"_"$WRT_DATE"."$EXT"
+                NEW_FILE="$WRT_VER"_"$NAME"_$KERNEL_"$WRT_DATE"."$EXT"
                 mv -f $FILE ./upload/$NEW_FILE
               done
             done
@@ -223,7 +237,7 @@ jobs:
       - name: Release Firmware
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{env.WRT_TARGET}}_${{env.WRT_VER}}_${{env.WRT_DATE}}
+          tag_name: ${{env.WRT_TARGET}}_${{env.WRT_VER}}_${{env.KERNEL}}_${{env.WRT_DATE}}
           files: ./wrt/upload/*.*
           body: |
             这是个平台固件包，内含多个设备！
