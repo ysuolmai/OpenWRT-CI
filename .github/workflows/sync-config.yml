@@ -1,0 +1,36 @@
+name: Sync Config Files
+
+on:
+  push:
+    paths:
+      - 'Config/IPQ60XX-WIFI-NO.txt'
+      - 'Config/IPQ60XX-WIFI-YES.txt'
+  workflow_dispatch:
+
+jobs:
+  sync-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 同步 NO 文件
+      - name: Sync NO Config files
+        run: |
+          cp Config/IPQ60XX-WIFI-NO.txt Config/IPQ60XX-EMMC-WIFI-NO.txt
+
+      # 同步 YES 文件
+      - name: Sync YES Config files
+        run: |
+          cp Config/IPQ60XX-WIFI-YES.txt Config/IPQ60XX-EMMC-WIFI-YES.txt
+
+      # 提交更改
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add Config/IPQ60XX-EMMC-WIFI-NO.txt Config/IPQ60XX-EMMC-WIFI-YES.txt
+          git commit -m "Sync Config files: NO and YES"
+          git push
