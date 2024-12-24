@@ -214,7 +214,7 @@ jobs:
               for FILE in $(find ./bin/targets/ -type f -iname "*$TYPE*.*") ; do
                 EXT=$(basename $FILE | cut -d '.' -f 2-)
                 NAME=$(basename $FILE | cut -d '.' -f 1 | grep -io "\($TYPE\).*")
-                NEW_FILE="$WRT_VER"_"$NAME"_"$WRT_DATE"."$EXT"
+                NEW_FILE="$WRT_VER"_"$NAME"_${KVER:-}_"$WRT_DATE"."$EXT"
                 mv -f $FILE ./upload/$NEW_FILE
               done
             done
