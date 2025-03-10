@@ -62,3 +62,11 @@ if [[ $WRT_TARGET != *"X86"* ]]; then
 	echo "CONFIG_TARGET_OPTIONS=y" >> ./.config
 	echo "CONFIG_TARGET_OPTIMIZATION=\"-O2 -pipe -march=armv8-a+crypto+crc -mcpu=cortex-a53+crypto+crc -mtune=cortex-a53\"" >> ./.config
 fi
+
+#自用配置调整
+if [[ $WRT_MARK == *"VIKINGYFY"* ]]; then
+	sed -i '/luci-app-nikki/d' ./.config
+	echo "CONFIG_PACKAGE_luci-app-nikki=n" >> ./.config
+
+	echo "CONFIG_PACKAGE_luci-app-gecoosac=y" >> ./.config
+fi
