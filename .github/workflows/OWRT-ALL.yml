@@ -34,7 +34,7 @@ jobs:
       matrix:
         CONFIG: [arm64]
         SOURCE: [coolsnowwolf/lede]
-        BRANCH: [owrt]
+        BRANCH: [master]
 
     #调用公用编译核心WRT-CORE.yml
     uses: ./.github/workflows/WRT-CORE.yml
