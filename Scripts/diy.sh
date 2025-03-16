@@ -210,7 +210,11 @@ fi
     "CONFIG_PACKAGE_luci-app-frps=y" 
 )
 
-[[ $WRT_TARGET == "IPQ"* ]] && provided_config_lines+=("CONFIG_PACKAGE_sqm-scripts-nss=y")
+[[ $WRT_TARGET == "IPQ"* ]] && provided_config_lines+=(
+    "CONFIG_PACKAGE_sqm-scripts-nss=y"
+    "CONFIG_PACKAGE_luci-app-sqm=y"
+    "CONFIG_PACKAGE_luci-i18n-sqm-zh-cn=y"
+)
 
 # Append configuration lines to .config
 for line in "${provided_config_lines[@]}"; do
