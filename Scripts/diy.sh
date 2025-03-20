@@ -138,6 +138,7 @@ provided_config_lines=(
     "CONFIG_PACKAGE_openssh-sftp-server=y"
     "CONFIG_PACKAGE_luci-app-frpc=m"
     #"CONFIG_PACKAGE_luci-app-mosdns=y"
+    "CONFIG_PACKAGE_luci-app-gecoosac=y"
 )
 
 [[ $WRT_TARGET == *"WIFI-NO"* ]] && provided_config_lines+=("CONFIG_PACKAGE_hostapd-common=n" "CONFIG_PACKAGE_wpad-openssl=n")
@@ -208,6 +209,9 @@ fi
     "CONFIG_PACKAGE_kmod-veth=y"
     "CONFIG_PACKAGE_automount=y"
     "CONFIG_PACKAGE_luci-app-frps=y" 
+    "CONFIG_PACKAGE_luci-app-tailscale=y"
+    "CONFIG_PACKAGE_luci-app-msd_lite=y"
+    "CONFIG_PACKAGE_luci-app-lucky=y"
 )
 
 [[ $WRT_TARGET == "IPQ"* ]] && provided_config_lines+=(
