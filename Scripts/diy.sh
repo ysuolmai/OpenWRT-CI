@@ -663,6 +663,8 @@ find ./ -name "cascade.less" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A
 find ./ -name "dark.less" -exec sed -i 's/#5e72e4/#31A1A1/g; s/#483d8b/#31A1A1/g' {} \;
 
 install -Dm755 "${GITHUB_WORKSPACE}/Scripts/99_ttyd-nopass.sh" "package/base-files/files/etc/uci-defaults/99_ttyd-nopass"
+install -Dm755 "${GITHUB_WORKSPACE}/Scripts/98_zerotier_tailscale_coexist.sh" "package/base-files/files/etc/uci-defaults/98_zerotier_tailscale_coexist"
+install -Dm644 "${GITHUB_WORKSPACE}/Scripts/zerotier.local.conf" "package/base-files/files/etc/zerotier.local.conf"
 install -Dm755 "${GITHUB_WORKSPACE}/Scripts/99-distfeeds.conf" "package/emortal/default-settings/files/99-distfeeds.conf"
 sed -i '/define Package\/default-settings\/install/a \
 \t$(INSTALL_DIR) $(1)/etc\n\t$(INSTALL_DATA) ./files/99-distfeeds.conf $(1)/etc/99-distfeeds.conf' \
