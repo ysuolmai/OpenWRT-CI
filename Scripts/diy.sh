@@ -463,7 +463,7 @@ provided_config_lines=(
     "CONFIG_PACKAGE_kmod-fs-cifs=y"
     "CONFIG_PACKAGE_cifsmount=y"
 	"CONFIG_PACKAGE_luci-theme-shadcn=y"
-    "CONFIG_PACKAGE_luci-app-openclash=y"
+    #"CONFIG_PACKAGE_luci-app-openclash=y"
 )
 
 if [[ $WRT_CONFIG == *"WIFI-NO"* ]]; then
@@ -527,9 +527,9 @@ fi
     "CONFIG_PACKAGE_kmod-sched-htb=y"
     "CONFIG_PACKAGE_tc-full=y"
     "CONFIG_PACKAGE_kmod-sched-netem=y"
-	"CONFIG_PACKAGE_nikki=y"
-	"CONFIG_PACKAGE_luci-app-nikki=y"
-	"CONFIG_PACKAGE_luci-i18n-nikki-zh-cn=y"
+	#"CONFIG_PACKAGE_nikki=y"
+	#"CONFIG_PACKAGE_luci-app-nikki=y"
+	#"CONFIG_PACKAGE_luci-i18n-nikki-zh-cn=y"
 	#"CONFIG_PACKAGE_luci-app-lucky=y"
 	#"CONFIG_PACKAGE_lucky=y"
 )
