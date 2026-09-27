@@ -2,7 +2,7 @@
 # Copyright (C) 2026 VIKINGYFY
 
 #CI项目
-name: MTK-ALL
+name: QCB-ALL
 
 #CI计划
 on:
@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       #max-parallel: 3
       matrix:
-        CONFIG: [MEDIATEK-WIFI-YES, MTK-EBPF-WIFI-YES]
+        CONFIG: [IPQ53XX-WIFI-NO, IPQ95XX-WIFI-YES]
         SOURCE: [VIKINGYFY/immortalwrt]
         BRANCH: [owrt]
 
@@ -44,6 +44,8 @@ jobs:
     with:
       #编译配置
       WRT_CONFIG: ${{matrix.CONFIG}}
+      #默认主题
+      WRT_THEME: aurora
       #默认主机名
       WRT_NAME: OWRT
       #默认WIFI名称
