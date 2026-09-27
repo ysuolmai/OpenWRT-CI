@@ -390,6 +390,18 @@ if ! git clone --depth=1 --single-branch --branch main \
 fi
 echo "[diy] self-maintained package collection installed"
 
+# Go 1.27 made encoding/json/v2 the default and removed the experimental
+# SkipFunc/DiscardUnknownMembers APIs. The sing-box snapshot still depends on
+# the pre-release go-json-experiment aliases, so build it with the supported
+# compatibility switch until that dependency is refreshed upstream.
+SING_BOX_MAKEFILE="package/ysuolmai-packages/sing-box/Makefile"
+if [ -f "$SING_BOX_MAKEFILE" ] && \
+   grep -q 'golang-package\.mk' "$SING_BOX_MAKEFILE" && \
+   ! grep -q 'GOEXPERIMENT=nojsonv2' "$SING_BOX_MAKEFILE"; then
+    sed -i '/golang-package\.mk/a GO_PKG_BUILD_VARS += GOEXPERIMENT=nojsonv2' "$SING_BOX_MAKEFILE"
+    echo "[diy] enabled Go JSON v1 compatibility for sing-box"
+fi
+
 #speedtest
 UPDATE_PACKAGE "luci-app-netspeedtest" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
 UPDATE_PACKAGE "speedtest-cli" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"

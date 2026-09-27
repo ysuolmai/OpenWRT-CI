@@ -10,6 +10,10 @@ on:
       WRT_CONFIG:
         required: true
         type: string
+      WRT_THEME:
+        required: false
+        default: aurora
+        type: string
       WRT_NAME:
         required: true
         type: string
@@ -45,6 +49,7 @@ on:
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   WRT_CONFIG: ${{inputs.WRT_CONFIG}}
+  WRT_THEME: ${{inputs.WRT_THEME}}
   WRT_NAME: ${{inputs.WRT_NAME}}
   WRT_SSID: ${{inputs.WRT_SSID}}
   WRT_WORD: ${{inputs.WRT_WORD}}
