@@ -943,6 +943,9 @@ if [ -f "$docker_makefile" ]; then
     sed -i "s/PKG_GIT_SHORT_COMMIT:=.*/PKG_GIT_SHORT_COMMIT:=$DOCKER_CLI_COMMIT/g" "$docker_makefile"
     sed -i 's/^PKG_HASH:=.*/PKG_HASH:=skip/' "$docker_makefile"
     sed -i '/define Build\/Prepare/,/endef/c\define Build\/Prepare\n\t$(Build\/Prepare\/Default)\nendef' "$docker_makefile"
+    if ! grep -qF 'vendor/github.com/santhosh-tekuri/jsonschema/v6/metaschemas' "$docker_makefile"; then
+        sed -i '/^define Build\/Compile/i GO_PKG_INSTALL_EXTRA += vendor/github.com/santhosh-tekuri/jsonschema/v6/metaschemas' "$docker_makefile"
+    fi
 fi
 
 echo "All Docker compilation fixes applied successfully!"
