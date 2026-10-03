@@ -712,6 +712,18 @@ for line in "${provided_config_lines[@]}"; do
     set_config "$config_name" "$config_value" || exit 1
 done
 
+# Keep the selected platform from being replaced by an upstream default target.
+for target_dir in target/linux/*; do
+    [ -d "$target_dir" ] || continue
+    target=${target_dir##*/}
+    if [ "$target" = "generic" ] || [ "$target" = "$WRT_TARGET" ]; then
+        continue
+    fi
+    target_symbol="CONFIG_TARGET_$target"
+    sed -i "/^${target_symbol}=y/d" .config
+    printf '# %s is not set\n' "$target_symbol" >> .config
+done
+
 # =======================================================
 # [pkg-fix] 替换 Makefile 中的 +kmod-iptables 直接依赖为 +kmod-nf-ipt
 # =======================================================
