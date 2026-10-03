@@ -402,6 +402,14 @@ if [ -f "$SING_BOX_MAKEFILE" ] && \
     echo "[diy] enabled Go JSON v1 compatibility for sing-box"
 fi
 
+TAILSCALE_MAKEFILE="package/ysuolmai-packages/tailscale/Makefile"
+if [ -f "$TAILSCALE_MAKEFILE" ] && \
+   grep -q 'golang-package\.mk' "$TAILSCALE_MAKEFILE" && \
+   ! grep -q 'GOEXPERIMENT=nojsonv2' "$TAILSCALE_MAKEFILE"; then
+    sed -i '/golang-package\.mk/a GO_PKG_BUILD_VARS += GOEXPERIMENT=nojsonv2' "$TAILSCALE_MAKEFILE"
+    echo "[diy] enabled Go JSON v1 compatibility for tailscale"
+fi
+
 #speedtest
 UPDATE_PACKAGE "luci-app-netspeedtest" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
 UPDATE_PACKAGE "speedtest-cli" "https://github.com/sbwml/openwrt_pkgs.git" "main" "pkg"
