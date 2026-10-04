@@ -224,6 +224,21 @@ jobs:
             fi
             bpf-linker --version
           fi
+
+          # The shared configuration can contain target symbols from another
+          # platform. Remove them immediately before defconfig so the selected
+          # matrix target is the only platform that can enter the build tree.
+          for target_dir in target/linux/*; do
+            [ -d "$target_dir" ] || continue
+            target=${target_dir##*/}
+            if [ "$target" = "generic" ] || [ "$target" = "$WRT_TARGET" ]; then
+              continue
+            fi
+            sed -i -E "/^(# )?CONFIG_TARGET_${target}(_|=)/d" .config
+          done
+          find build_dir staging_dir -maxdepth 3 -type d \
+            \( -name '*root-mediatek*' -o -name '*linux-mediatek*' \) \
+            -prune -exec rm -rf {} + 2>/dev/null || true
           
           make defconfig -j$(nproc) && make clean -j$(nproc)
 
