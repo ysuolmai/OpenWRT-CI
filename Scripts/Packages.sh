@@ -76,6 +76,7 @@ UPDATE_PACKAGE "viking" "VIKINGYFY/packages" "main" "" "axonhub gecoosac luci-ap
 # ysuolmai/openwrt-packages collection in diy.sh.
 [ ! -d ./packages ] || find ./packages -maxdepth 3 -type d \( -iname '*homeproxy*' -o -iname '*sing-box*' \) -prune -exec rm -rf {} +
 UPDATE_PACKAGE "vnt" "lmq8267/luci-app-vnt" "main"
+UPDATE_PACKAGE "luci-app-netbird" "looong-cat/luci-app-netbird" "main" "pkg"
 
 UPDATE_PACKAGE "mosdns" "sbwml/luci-app-mosdns" "v5" "" "v2dat"
 UPDATE_PACKAGE "openlist2" "sbwml/luci-app-openlist2" "main"

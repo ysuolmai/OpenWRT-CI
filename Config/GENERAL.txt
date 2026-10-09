@@ -102,6 +102,7 @@ CONFIG_PACKAGE_libimobiledevice=y
 CONFIG_PACKAGE_libnvme=y
 CONFIG_PACKAGE_lsblk=y
 CONFIG_PACKAGE_luci-base=y
+CONFIG_PACKAGE_luci-app-netbird=y
 CONFIG_PACKAGE_luci-compat=y
 CONFIG_PACKAGE_luci-lib-base=y
 CONFIG_PACKAGE_luci-lib-ipkg=y
