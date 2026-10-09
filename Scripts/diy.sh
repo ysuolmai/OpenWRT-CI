@@ -530,7 +530,11 @@ keywords_to_delete=(
 [[ $WRT_CONFIG != *"EMMC"* ]] && keywords_to_delete+=("samba" "autosamba" "disk")
 
 for keyword in "${keywords_to_delete[@]}"; do
-    sed -i "/$keyword/d" ./.config
+    if [[ "$keyword" == "ddns" ]]; then
+        sed -i -E '/^CONFIG_PACKAGE_(luci-app-)?ddns(-[^=]+)?=/d' ./.config
+    else
+        sed -i "/$keyword/d" ./.config
+    fi
 done
 
 # shadcn is the only supported LuCI theme.
@@ -711,6 +715,9 @@ for line in "${provided_config_lines[@]}"; do
     config_value="${config_line#*=}"
     set_config "$config_name" "$config_value" || exit 1
 done
+
+# Keep the NetBird LuCI package enabled after package-name filtering above.
+set_config "PACKAGE_luci-app-netbird" "y" || exit 1
 
 # Keep the selected platform from being replaced by an upstream default target.
 for target_dir in target/linux/*; do
