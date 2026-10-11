@@ -236,6 +236,12 @@ jobs:
             -prune -exec rm -rf {} + 2>/dev/null || true
           
           make defconfig -j$(nproc) && make clean -j$(nproc)
+          for PACKAGE in luci-app-netbird netbird rpcd rpcd-mod-ucode luci-base conntrack kmod-tun; do
+            if ! grep -qx "CONFIG_PACKAGE_${PACKAGE}=y" .config; then
+              echo "::error::Required NetBird package was dropped by defconfig: $PACKAGE"
+              exit 1
+            fi
+          done
 
       - name: Download Packages
         if: ${{ !inputs.WRT_TEST }}
@@ -280,6 +286,14 @@ jobs:
           cp -f ./.config ./upload/Config-"$WRT_CONFIG"-"$WRT_INFO"-"$WRT_BRANCH"-"$WRT_DATE".txt
 
           if [[ "$WRT_TEST" != 'true' ]]; then
+            while IFS= read -r -d '' MANIFEST; do
+              for PACKAGE in luci-app-netbird netbird; do
+                if ! grep -q "^${PACKAGE} - " "$MANIFEST"; then
+                  echo "::error::Required package $PACKAGE is missing from $MANIFEST"
+                  exit 1
+                fi
+              done
+            done < <(find ./bin/targets/ -type f -name '*.manifest' -print0)
             echo "WRT_KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)" >> $GITHUB_ENV
             echo "WRT_LIST=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 

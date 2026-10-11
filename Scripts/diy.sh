@@ -319,6 +319,9 @@ UPDATE_PACKAGE() {
 }
 
 UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "main"
+# Keep the repository: pkg extraction would delete the identically named package.
+UPDATE_PACKAGE "luci-app-netbird" "looong-cat/luci-app-netbird" "main"
+test -f package/luci-app-netbird/luci-app-netbird/Makefile || exit 1
 #UPDATE_PACKAGE "openwrt-gecoosac" "ysuolmai/openwrt-gecoosac" "main"
 # gecoosac 上游作者 (kiss19776) 经常覆盖同名 release asset，PKG_HASH 跟不上
 # 把 PKG_HASH:=xxxxx 改成 PKG_HASH:=skip 跳过校验
@@ -530,11 +533,7 @@ keywords_to_delete=(
 [[ $WRT_CONFIG != *"EMMC"* ]] && keywords_to_delete+=("samba" "autosamba" "disk")
 
 for keyword in "${keywords_to_delete[@]}"; do
-    if [[ "$keyword" == "ddns" ]]; then
-        sed -i -E '/^CONFIG_PACKAGE_(luci-app-)?ddns(-[^=]+)?=/d' ./.config
-    else
-        sed -i "/$keyword/d" ./.config
-    fi
+    sed -i "/$keyword/d" ./.config
 done
 
 # shadcn is the only supported LuCI theme.
@@ -563,6 +562,14 @@ fi
 # [section: package-config] 按构建类型整理软件包配置
 # =======================================================
 provided_config_lines=(
+    # This app declares runtime-only dependencies; select them for the image.
+    "CONFIG_PACKAGE_luci-app-netbird=y"
+    "CONFIG_PACKAGE_luci-i18n-netbird-zh-cn=y"
+    "CONFIG_PACKAGE_netbird=y"
+    "CONFIG_PACKAGE_rpcd=y"
+    "CONFIG_PACKAGE_rpcd-mod-ucode=y"
+    "CONFIG_PACKAGE_conntrack=y"
+    "CONFIG_PACKAGE_kmod-tun=y"
     "CONFIG_PACKAGE_luci-app-zerotier=y"
     "CONFIG_PACKAGE_luci-i18n-zerotier-zh-cn=y"
     "CONFIG_PACKAGE_luci-app-poweroff=y"
@@ -715,9 +722,6 @@ for line in "${provided_config_lines[@]}"; do
     config_value="${config_line#*=}"
     set_config "$config_name" "$config_value" || exit 1
 done
-
-# Keep the NetBird LuCI package enabled after package-name filtering above.
-set_config "PACKAGE_luci-app-netbird" "y" || exit 1
 
 # Keep the selected platform from being replaced by an upstream default target.
 for target_dir in target/linux/*; do
