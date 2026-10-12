@@ -293,9 +293,9 @@ jobs:
                   exit 1
                 fi
               done
-            done < <(find ./bin/targets/ -type f -name '*.manifest' -print0)
-            echo "WRT_KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)" >> $GITHUB_ENV
-            echo "WRT_LIST=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
+            done < <(find ./bin/targets/ -maxdepth 3 -type f -name '*.manifest' -print0)
+            echo "WRT_KVER=$(find ./bin/targets/ -maxdepth 3 -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \; | sort -u | tr '\n' ' ')" >> $GITHUB_ENV
+            echo "WRT_LIST=$(find ./bin/targets/ -maxdepth 3 -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | sort -u | tr '\n' ' ')" >> $GITHUB_ENV
 
             find ./bin/targets/ -iregex ".*\(buildinfo\|json\|sha256sums\|packages\)$" -exec rm -rf {} +
 
