@@ -458,7 +458,7 @@ else
 fi
 
 # 使用标准的 "is not set" 注释，避免后面的 make defconfig 重新启用默认设备。
-sed -i "/^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_/{
+sed -i "/^CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_/{
     /$keep_pattern/! s/^CONFIG_\([^=]*\)=.*/# CONFIG_\1 is not set/
 }" ./.config
 
