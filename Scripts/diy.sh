@@ -451,18 +451,6 @@ sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $CFG_FILE
 sed -i "s/hostname='.*'/hostname='$WRT_NAME'/g" $CFG_FILE
 
 
-if [[ $WRT_CONFIG == *"EMMC"* ]]; then
-    keep_pattern="\(redmi_ax5-jdcloud\|jdcloud_re-ss-01\|jdcloud_re-cs-07\)=y$"
-else
-    keep_pattern="\(redmi_ax5\|qihoo_360v6\|redmi_ax5-jdcloud\|zn_m2\|jdcloud_re-ss-01\|jdcloud_re-cs-07\)=y$"
-fi
-
-# 使用标准的 "is not set" 注释，避免后面的 make defconfig 重新启用默认设备。
-sed -i "/^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_/{
-    /$keep_pattern/! s/^CONFIG_\([^=]*\)=.*/# CONFIG_\1 is not set/
-}" ./.config
-
-
 # MTK 设备白名单——只保留这里列出的设备，其他 MEDIATEK-WIFI-{YES,NO}.txt
 # 里的设备一律显式设为 not set，避免 make defconfig 恢复默认设备。
 # 想多编几个设备就往 mtk_keep 里加（用 \| 分隔），名字对应

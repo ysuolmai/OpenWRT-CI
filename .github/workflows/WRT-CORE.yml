@@ -229,21 +229,10 @@ jobs:
           # The shared configuration can contain target symbols from another
           # platform. Remove them immediately before defconfig so the selected
           # matrix target is the only platform that can enter the build tree.
-          target_profile_options=$(grep -E '^(# )?CONFIG_TARGET_(MULTI_PROFILE|ALL_PROFILES|PER_DEVICE_ROOTFS)(=| )' .config || true)
           sed -i -E '/^(# )?CONFIG_TARGET_/d' .config
-          if [[ -n "$target_profile_options" ]]; then
-            printf '%s\n' "$target_profile_options" >> .config
-          fi
           cat "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt" >> .config
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
-            if [[ "$WRT_CONFIG" == *EMMC* ]]; then
-              keep_pattern='\(redmi_ax5-jdcloud\|jdcloud_re-ss-01\|jdcloud_re-cs-07\)=y$'
-            else
-              keep_pattern='\(redmi_ax5\|qihoo_360v6\|redmi_ax5-jdcloud\|zn_m2\|jdcloud_re-ss-01\|jdcloud_re-cs-07\)=y$'
-            fi
-            sed -i "/^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_/{
-              /$keep_pattern/! s/^CONFIG_\\([^=]*\\)=.*/# CONFIG_\\1 is not set/
-            }" .config
+            printf '%s\n' 'CONFIG_TARGET_MULTI_PROFILE=y' 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
           fi
           find build_dir staging_dir -maxdepth 3 -type d \
             \( -name '*root-mediatek*' -o -name '*linux-mediatek*' \) \
