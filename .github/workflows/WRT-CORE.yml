@@ -229,17 +229,19 @@ jobs:
           # The shared configuration can contain target symbols from another
           # platform. Remove them immediately before defconfig so the selected
           # matrix target is the only platform that can enter the build tree.
+          target_profile_options=$(grep -E '^(# )?CONFIG_TARGET_(MULTI_PROFILE|ALL_PROFILES|PER_DEVICE_ROOTFS)(=| )' .config || true)
           sed -i -E '/^(# )?CONFIG_TARGET_/d' .config
+          if [[ -n "$target_profile_options" ]]; then
+            printf '%s\n' "$target_profile_options" >> .config
+          fi
           cat "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt" >> .config
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
             if [[ "$WRT_CONFIG" == *EMMC* ]]; then
               keep_pattern='\(redmi_ax5-jdcloud\|jdcloud_re-ss-01\|jdcloud_re-cs-07\)=y$'
-            elif [[ "$WRT_CONFIG" == *WIFI-NO* ]]; then
-              keep_pattern='\(jdcloud_re-cs-07\)=y$'
             else
               keep_pattern='\(redmi_ax5\|qihoo_360v6\|redmi_ax5-jdcloud\|zn_m2\|jdcloud_re-ss-01\|jdcloud_re-cs-07\)=y$'
             fi
-            sed -i "/^CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_/{
+            sed -i "/^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_/{
               /$keep_pattern/! s/^CONFIG_\\([^=]*\\)=.*/# CONFIG_\\1 is not set/
             }" .config
           fi
@@ -248,10 +250,16 @@ jobs:
             -prune -exec rm -rf {} + 2>/dev/null || true
           
           make defconfig -j$(nproc) && make clean -j$(nproc)
-          if [[ "$WRT_CONFIG" == IPQ60XX-* ]] && \
-            ! grep -q '^CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_.*=y$' .config; then
-            echo "::error::No IPQ60XX device profile survived defconfig"
-            exit 1
+          if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
+            if ! grep -qx 'CONFIG_TARGET_MULTI_PROFILE=y' .config; then
+              echo "::error::IPQ60XX multi-profile mode was dropped by defconfig"
+              exit 1
+            fi
+            selected_profiles=$(grep -c '^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_.*=y$' .config || true)
+            if (( selected_profiles < 2 )); then
+              echo "::error::Expected multiple IPQ60XX device profiles, found $selected_profiles"
+              exit 1
+            fi
           fi
           for PACKAGE in luci-app-netbird netbird rpcd rpcd-mod-ucode luci-base conntrack kmod-tun; do
             if ! grep -qx "CONFIG_PACKAGE_${PACKAGE}=y" .config; then
