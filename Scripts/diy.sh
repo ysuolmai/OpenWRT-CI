@@ -724,24 +724,11 @@ for target_dir in target/linux/*; do
 done
 
 # =======================================================
-# [pkg-fix] 替换 Makefile 中的 +kmod-iptables 直接依赖为 +kmod-nf-ipt
+# [pkg-fix] 将普通包的 +kmod-iptables 依赖切换到 +kmod-nf-ipt
 # =======================================================
 echo "================================================================"
-echo "[pkg-fix] 替换 Makefile 中的 +kmod-iptables 依赖为 +kmod-nf-ipt"
-
-_affected=$(grep -rl "+kmod-iptables" package/ feeds/ 2>/dev/null || true)
-if [ -n "$_affected" ]; then
-    _total=$(echo "$_affected" | wc -l)
-    echo "[pkg-fix] 发现 $_total 个文件依赖 kmod-iptables，前 15 个:"
-    echo "$_affected" | head -15 | sed 's/^/  - /'
-    while IFS= read -r _mk; do
-        sed -i -E 's/\+kmod-iptables([^a-zA-Z0-9_-]|$)/+kmod-nf-ipt\1/g' "$_mk"
-    done <<< "$_affected"
-    _remain=$(grep -rlE "\+kmod-iptables([^a-zA-Z0-9_-]|$)" package/ feeds/ 2>/dev/null | wc -l)
-    echo "[pkg-fix] 替换完成，残留 $_remain 处 (应为 0)"
-else
-    echo "[pkg-fix] 没有文件依赖 kmod-iptables (已是干净状态)"
-fi
+echo "[pkg-fix] 更新普通包依赖，保留 kmod-nf-ipt 自身依赖"
+sh "$GITHUB_WORKSPACE/Scripts/fix-kmod-iptables-deps.sh" "$PWD"
 
 set_config "PACKAGE_kmod-iptables" unset || exit 1
 echo "================================================================"

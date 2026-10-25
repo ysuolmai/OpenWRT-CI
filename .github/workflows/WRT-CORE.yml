@@ -76,22 +76,23 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          # Hosted runners ship several large SDKs that OpenWrt never uses.
-          # Reclaim the space before creating toolchains and target packages.
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
-            /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
-          sudo -E apt -yqq purge firefox
-          sudo -E apt -yqq update
-          sudo -E apt -yqq autoremove --purge
-          sudo -E apt -yqq autoclean
-          sudo -E apt -yqq clean
-          sudo -E apt -yqq install dos2unix libfuse-dev libxml2
-          if [[ "${WRT_CONFIG}" == *"EBPF"* ]]; then
-            sudo -E apt -yqq install clang llvm libbpf-dev libclang-dev pkg-config cmake zstd
-          fi
-          sudo bash -c 'bash <(curl -sL https://build-scripts.immortalwrt.org/init_build_environment.sh)'
-          sudo -E systemctl daemon-reload
-          sudo -E timedatectl set-timezone "Asia/Shanghai"
+          sudo apt-get -yqq purge firefox
+          sudo apt-get -yqq update
+          sudo apt-get -yqq full-upgrade
+          sudo apt-get -yqq autoremove --purge
+          sudo apt-get -yqq autoclean
+          sudo apt-get -yqq clean
+
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential bzip2 ca-certificates ccache clang \
+            cmake cpio curl device-tree-compiler dos2unix file flex \
+            g++-multilib gawk gcc-multilib genisoimage gettext git jq \
+            libbpf-dev libclang-dev libdw-dev libelf-dev libncurses-dev libssl-dev lld \
+            llvm ninja-build patch perl pkgconf python3 python3-cryptography \
+            python3-dev python3-packaging python3-pyelftools python3-setuptools qemu-utils rsync swig \
+            unzip wget xz-utils zlib1g-dev zstd
+
+          sudo timedatectl set-timezone "Asia/Shanghai"
 
           sudo mkdir -p /mnt/build_wrt
           sudo chown $USER:$USER /mnt/build_wrt
@@ -192,63 +193,19 @@ jobs:
           $GITHUB_WORKSPACE/Scripts/Settings.sh
           $GITHUB_WORKSPACE/Scripts/diy.sh
 
-          if [[ "${WRT_CONFIG}" == *"EBPF"* ]]; then
-            HONK_BPF_RUST_TOOLCHAIN=$(sed -n 's/^BPF_RUST_TOOLCHAIN?=//p' package/openwrt-honk/honk/Makefile | head -n 1)
-            HONK_BPF_LINKER_VERSION=$(sed -n 's/^readonly bpf_linker_version=.*:-\([^}]*\)}$/\1/p' package/openwrt-honk/.github/scripts/build-packages-in-sdk.sh | head -n 1)
-            HONK_BPF_LINKER_SHA256=$(sed -n 's/^readonly bpf_linker_sha256=.*:-\([^}]*\)}$/\1/p' package/openwrt-honk/.github/scripts/build-packages-in-sdk.sh | head -n 1)
-            if [ -z "$HONK_BPF_RUST_TOOLCHAIN" ] || [ -z "$HONK_BPF_LINKER_VERSION" ] || [ -z "$HONK_BPF_LINKER_SHA256" ]; then
-              echo "无法从 openwrt-honk 读取 BPF 构建工具版本"
-              exit 1
-            fi
-
-            export PATH="$HOME/.cargo/bin:$PATH"
-            echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-            if ! command -v rustup >/dev/null 2>&1; then
-              curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
-                --location --retry 5 --retry-all-errors --retry-delay 2 \
-                https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
-            fi
-            rustup toolchain install "$HONK_BPF_RUST_TOOLCHAIN" --profile minimal --component rust-src
-
-            if ! command -v bpf-linker >/dev/null 2>&1 || \
-              ! bpf-linker --version | grep -q "$HONK_BPF_LINKER_VERSION"; then
-              HONK_BPF_LINKER_ARCHIVE=$(mktemp)
-              trap 'rm -f "$HONK_BPF_LINKER_ARCHIVE"' EXIT
-              curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
-                --location --retry 5 --retry-all-errors --retry-delay 2 \
-                --output "$HONK_BPF_LINKER_ARCHIVE" \
-                "https://github.com/aya-rs/bpf-linker/releases/download/v${HONK_BPF_LINKER_VERSION}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
-              printf '%s  %s\n' "$HONK_BPF_LINKER_SHA256" "$HONK_BPF_LINKER_ARCHIVE" | sha256sum -c -
-              mkdir -p "$HOME/.cargo/bin"
-              tar --zstd -xf "$HONK_BPF_LINKER_ARCHIVE" -C "$HOME/.cargo/bin"
-              chmod +x "$HOME/.cargo/bin/bpf-linker"
-            fi
-            bpf-linker --version
-          fi
-
-          # The shared configuration can contain target symbols from another
-          # platform. Remove them immediately before defconfig so the selected
-          # matrix target is the only platform that can enter the build tree.
+          # Reapply the selected matrix profile after shared/private settings.
+          # This keeps unrelated target symbols from another board out of defconfig.
           sed -i -E '/^(# )?CONFIG_TARGET_/d' .config
           cat "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt" >> .config
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
             printf '%s\n' 'CONFIG_TARGET_MULTI_PROFILE=y' 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
           fi
-          find build_dir staging_dir -maxdepth 3 -type d \
-            \( -name '*root-mediatek*' -o -name '*linux-mediatek*' \) \
-            -prune -exec rm -rf {} + 2>/dev/null || true
-          
+
           make defconfig -j$(nproc) && make clean -j$(nproc)
-          if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
-            if ! grep -qx 'CONFIG_TARGET_MULTI_PROFILE=y' .config; then
-              echo "::error::IPQ60XX multi-profile mode was dropped by defconfig"
-              exit 1
-            fi
-            selected_profiles=$(grep -c '^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_.*=y$' .config || true)
-            if (( selected_profiles < 2 )); then
-              echo "::error::Expected multiple IPQ60XX device profiles, found $selected_profiles"
-              exit 1
-            fi
+
+          if [[ "$WRT_CONFIG" == IPQ60XX-* ]] && ! grep -qx 'CONFIG_TARGET_MULTI_PROFILE=y' .config; then
+            echo "::error::IPQ60XX multi-profile mode was dropped by defconfig"
+            exit 1
           fi
           for PACKAGE in luci-app-netbird netbird rpcd rpcd-mod-ucode luci-base conntrack kmod-tun; do
             if ! grep -qx "CONFIG_PACKAGE_${PACKAGE}=y" .config; then
@@ -256,6 +213,45 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Prepare Rust Toolchain
+        if: ${{ !inputs.WRT_TEST }}
+        run: |
+          cd ./wrt/
+
+          bash "$GITHUB_WORKSPACE/.github/scripts/prepare-rust.sh"
+
+      - name: Prepare eBPF Toolchain
+        if: ${{ !inputs.WRT_TEST && contains(inputs.WRT_CONFIG, 'EBPF') }}
+        run: |
+          cd ./wrt/
+
+          HONK_BPF_RUST_TOOLCHAIN=$(sed -n 's/^BPF_RUST_TOOLCHAIN?=//p' package/openwrt-honk/honk/Makefile | head -n 1)
+          HONK_BPF_LINKER_VERSION=$(sed -n 's/^readonly bpf_linker_version=.*:-\([^}]*\)}$/\1/p' package/openwrt-honk/.github/scripts/build-packages-in-sdk.sh | head -n 1)
+          HONK_BPF_LINKER_SHA256=$(sed -n 's/^readonly bpf_linker_sha256=.*:-\([^}]*\)}$/\1/p' package/openwrt-honk/.github/scripts/build-packages-in-sdk.sh | head -n 1)
+          if [ -z "$HONK_BPF_RUST_TOOLCHAIN" ] || [ -z "$HONK_BPF_LINKER_VERSION" ] || [ -z "$HONK_BPF_LINKER_SHA256" ]; then
+            echo "Unable to read the eBPF tool versions from openwrt-honk"
+            exit 1
+          fi
+
+          export PATH="$HOME/.cargo/bin:$PATH"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          rustup toolchain install "$HONK_BPF_RUST_TOOLCHAIN" --profile minimal --component rust-src
+
+          if ! command -v bpf-linker >/dev/null 2>&1 || \
+            ! bpf-linker --version | grep -q "$HONK_BPF_LINKER_VERSION"; then
+            HONK_BPF_LINKER_ARCHIVE=$(mktemp)
+            trap 'rm -f "$HONK_BPF_LINKER_ARCHIVE"' EXIT
+            curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+              --location --retry 5 --retry-all-errors --retry-delay 2 \
+              --output "$HONK_BPF_LINKER_ARCHIVE" \
+              "https://github.com/aya-rs/bpf-linker/releases/download/v${HONK_BPF_LINKER_VERSION}/bpf-linker-x86_64-unknown-linux-musl.tar.zst"
+            printf '%s  %s\n' "$HONK_BPF_LINKER_SHA256" "$HONK_BPF_LINKER_ARCHIVE" | sha256sum -c -
+            mkdir -p "$HOME/.cargo/bin"
+            tar --zstd -xf "$HONK_BPF_LINKER_ARCHIVE" -C "$HOME/.cargo/bin"
+            chmod +x "$HOME/.cargo/bin/bpf-linker"
+          fi
+          bpf-linker --version
 
       - name: Download Packages
         if: ${{ !inputs.WRT_TEST }}
@@ -269,7 +265,25 @@ jobs:
         run: |
           cd ./wrt/
 
-          make -j$(nproc) || make -j1 V=s
+          mkdir -p "$GITHUB_WORKSPACE/build-reports"
+          make -j$(nproc) BUILD_TIME_LOG="$GITHUB_WORKSPACE/build-reports/parallel.tsv" || \
+            make -j1 V=s BUILD_TIME_LOG="$GITHUB_WORKSPACE/build-reports/serial.tsv"
+
+      - name: Collect Build Reports
+        if: ${{ !inputs.WRT_TEST && always() }}
+        run: |
+          if [ -d ./wrt/.git ]; then
+            cd ./wrt/
+            bash "$GITHUB_WORKSPACE/.github/scripts/collect-build-reports.sh"
+          fi
+
+      - name: Upload Build Reports
+        if: ${{ !inputs.WRT_TEST && always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-reports-${{env.WRT_CONFIG}}-${{env.WRT_INFO}}-${{github.run_attempt}}
+          path: ./build-reports/
+          retention-days: 7
 
       - name: Save Build Cache
         if: ${{ !inputs.WRT_TEST && success() && steps.cache-restore.outputs.cache-hit != 'true' }}
@@ -308,8 +322,8 @@ jobs:
                 fi
               done
             done < <(find ./bin/targets/ -maxdepth 3 -type f -name '*.manifest' -print0)
-            echo "WRT_KVER=$(find ./bin/targets/ -maxdepth 3 -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \; | sort -u | tr '\n' ' ')" >> $GITHUB_ENV
-            echo "WRT_LIST=$(find ./bin/targets/ -maxdepth 3 -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | sort -u | tr '\n' ' ')" >> $GITHUB_ENV
+            echo "WRT_KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)" >> $GITHUB_ENV
+            echo "WRT_LIST=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 
             find ./bin/targets/ -iregex ".*\(buildinfo\|json\|sha256sums\|packages\)$" -exec rm -rf {} +
 
@@ -325,19 +339,7 @@ jobs:
             make clean -j$(nproc)
           fi
 
-      - name: Upload Firmware Artifact
-        id: artifact
-        continue-on-error: true
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{env.WRT_CONFIG}}-${{env.WRT_INFO}}-${{env.WRT_BRANCH}}-${{env.WRT_DATE}}
-          path: ./wrt/upload/*.*
-          if-no-files-found: error
-          compression-level: 0
-
       - name: Release Firmware
-        id: release
-        continue-on-error: true
         uses: softprops/action-gh-release@master
         with:
           tag_name: ${{env.WRT_CONFIG}}-${{env.WRT_INFO}}-${{env.WRT_BRANCH}}-${{env.WRT_DATE}}
@@ -364,12 +366,6 @@ jobs:
 
             内核版本：${{env.WRT_KVER}}
             插件列表：${{env.WRT_LIST}}
-
-      - name: Verify Firmware Delivery
-        if: always() && steps.artifact.outcome != 'success' && steps.release.outcome != 'success'
-        run: |
-          echo "::error::Artifact upload and GitHub Release both failed."
-          exit 1
 
   cache-rollover:
     name: Roll cache generations
