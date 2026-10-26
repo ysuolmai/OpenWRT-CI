@@ -926,10 +926,10 @@ _MOBY_TAG=$(curl -sf https://api.github.com/repos/moby/moby/releases/latest | \
 DOCKER_VER=$(echo "$_MOBY_TAG" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 
 if [ -z "$DOCKER_VER" ]; then
-    echo "警告: 无法获取 Docker 最新版本，回退到 29.5.2"
-    DOCKER_VER="29.5.2"
-    DOCKERD_COMMIT="568f755"
-    DOCKER_CLI_COMMIT="79eb04c"
+    echo "警告: 无法获取 Docker 最新版本，回退到已验证的 29.9.2"
+    DOCKER_VER="29.9.2"
+    DOCKERD_COMMIT="0367cbe"
+    DOCKER_CLI_COMMIT="a82e528"
 else
     echo "Latest Docker version: $DOCKER_VER (tag: $_MOBY_TAG)"
     DOCKERD_COMMIT=$(curl -sf "https://api.github.com/repos/moby/moby/commits?sha=${_MOBY_TAG}&per_page=1" | \
@@ -937,9 +937,10 @@ else
     DOCKER_CLI_COMMIT=$(curl -sf "https://api.github.com/repos/docker/cli/commits?sha=v${DOCKER_VER}&per_page=1" | \
         python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['sha'][:7] if isinstance(d,list) and d else '')")
     if [ -z "$DOCKERD_COMMIT" ] || [ -z "$DOCKER_CLI_COMMIT" ]; then
-        echo "警告: 无法获取 commit hash，回退到已知值"
-        DOCKERD_COMMIT="568f755"
-        DOCKER_CLI_COMMIT="79eb04c"
+        echo "警告: 无法获取 commit hash，回退到已验证的 29.9.2 commit"
+        DOCKER_VER="29.9.2"
+        DOCKERD_COMMIT="0367cbe"
+        DOCKER_CLI_COMMIT="a82e528"
     fi
 fi
 echo "Docker: $DOCKER_VER | dockerd: $DOCKERD_COMMIT | cli: $DOCKER_CLI_COMMIT"
