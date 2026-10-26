@@ -229,6 +229,7 @@ jobs:
             for EXPECTED in 'CONFIG_TARGET_qualcommax=y' 'CONFIG_TARGET_qualcommax_ipq60xx=y' 'CONFIG_TARGET_SUBTARGET="ipq60xx"'; do
               if ! grep -Fqx "$EXPECTED" .config; then
                 echo "::error::Wrong IPQ60XX target configuration: expected $EXPECTED"
+                grep -E '^(# )?CONFIG_(DEFAULT_TARGET_|TARGET_)' .config | head -n 60 || true
                 exit 1
               fi
             done
