@@ -216,6 +216,14 @@ jobs:
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
             sed -i -E '/^(# )?CONFIG_TARGET_(MULTI_PROFILE|PER_DEVICE_ROOTFS)(=| )/d' .config
             printf '%s\n' 'CONFIG_TARGET_MULTI_PROFILE=y' 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
+            echo "IPQ60XX target before defconfig: $WRT_TARGET/$WRT_SUBTARGET"
+            grep -E '^(# )?CONFIG_(DEFAULT_TARGET_|TARGET_)' .config | sed -n '1,40p'
+            for EXPECTED in 'CONFIG_TARGET_qualcommax=y' 'CONFIG_TARGET_qualcommax_ipq60xx=y'; do
+              if ! grep -Fqx "$EXPECTED" .config; then
+                echo "::error::IPQ60XX target selection missing before defconfig: $EXPECTED"
+                exit 1
+              fi
+            done
           fi
 
           make defconfig -j$(nproc) && make clean -j$(nproc)
@@ -229,7 +237,7 @@ jobs:
             for EXPECTED in 'CONFIG_TARGET_qualcommax=y' 'CONFIG_TARGET_qualcommax_ipq60xx=y' 'CONFIG_TARGET_SUBTARGET="ipq60xx"'; do
               if ! grep -Fqx "$EXPECTED" .config; then
                 echo "::error::Wrong IPQ60XX target configuration: expected $EXPECTED"
-                grep -E '^(# )?CONFIG_(DEFAULT_TARGET_|TARGET_)' .config | head -n 60 || true
+                grep -E '^(# )?CONFIG_(DEFAULT_TARGET_|TARGET_)' .config | sed -n '1,60p' || true
                 exit 1
               fi
             done
