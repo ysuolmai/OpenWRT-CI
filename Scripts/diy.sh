@@ -596,7 +596,10 @@ if [[ $WRT_CONFIG == *"WIFI-NO"* ]]; then
 fi
 
 if [[ "$WRT_CONFIG" != *"EMMC"* && "$WRT_CONFIG" == *"WIFI-NO"* ]]; then
-    sed -i 's/\s*kmod-[^ ]*usb[^ ]*\s*\\\?//g' ./target/linux/qualcommax/Makefile
+    sed -i -E \
+        -e 's/[[:space:]]*kmod-[^[:space:]]*usb[^[:space:]]*//g' \
+        -e '/^[[:space:]]*\\[[:space:]]*$/d' \
+        ./target/linux/qualcommax/Makefile
     echo "已删除 Makefile 中的 USB 相关 package"
 fi
 
