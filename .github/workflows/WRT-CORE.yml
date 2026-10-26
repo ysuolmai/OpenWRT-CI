@@ -83,6 +83,10 @@ jobs:
           sudo apt-get -yqq autoclean
           sudo apt-get -yqq clean
 
+          # Keep disk headroom for large multi-device and BTF-enabled kernels.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
+          df -h /
+
           sudo apt-get install -y --no-install-recommends \
             bc bison build-essential bzip2 ca-certificates ccache clang \
             cmake cpio curl device-tree-compiler dos2unix file flex \
@@ -179,6 +183,7 @@ jobs:
 
           $GITHUB_WORKSPACE/Scripts/Packages.sh
           $GITHUB_WORKSPACE/Scripts/Handles.sh
+          $GITHUB_WORKSPACE/.github/scripts/prepare-i2c-tools.sh
 
       - name: Custom Settings
         run: |
@@ -191,21 +196,60 @@ jobs:
           fi
 
           $GITHUB_WORKSPACE/Scripts/Settings.sh
+          $GITHUB_WORKSPACE/.github/scripts/prepare-build-host.sh
           $GITHUB_WORKSPACE/Scripts/diy.sh
 
           # Reapply the selected matrix profile after shared/private settings.
-          # This keeps unrelated target symbols from another board out of defconfig.
-          sed -i -E '/^(# )?CONFIG_TARGET_/d' .config
+          # Clear stale platform/default selections while preserving generic
+          # target options such as ROOTFS and per-device rootfs settings.
+          awk '
+            /^(# )?CONFIG_DEFAULT_TARGET_[A-Za-z0-9_-]+=y$/ { next }
+            /^# CONFIG_DEFAULT_TARGET_[A-Za-z0-9_-]+ is not set$/ { next }
+            /^(# )?CONFIG_TARGET_/ && $0 !~ /^(# )?CONFIG_TARGET_(MULTI_PROFILE|PER_DEVICE_ROOTFS|ROOTFS_)/ { next }
+            { print }
+          ' .config > .config.target-reset
+          mv .config.target-reset .config
           cat "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt" >> .config
+          if [[ -n "$WRT_SUBTARGET" ]]; then
+            printf 'CONFIG_DEFAULT_TARGET_%s_%s=y\n' "$WRT_TARGET" "$WRT_SUBTARGET" >> .config
+          fi
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
+            sed -i -E '/^(# )?CONFIG_TARGET_(MULTI_PROFILE|PER_DEVICE_ROOTFS)(=| )/d' .config
             printf '%s\n' 'CONFIG_TARGET_MULTI_PROFILE=y' 'CONFIG_TARGET_PER_DEVICE_ROOTFS=y' >> .config
           fi
 
           make defconfig -j$(nproc) && make clean -j$(nproc)
+          df -h /
 
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]] && ! grep -qx 'CONFIG_TARGET_MULTI_PROFILE=y' .config; then
             echo "::error::IPQ60XX multi-profile mode was dropped by defconfig"
             exit 1
+          fi
+          if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
+            for EXPECTED in 'CONFIG_TARGET_qualcommax=y' 'CONFIG_TARGET_qualcommax_ipq60xx=y' 'CONFIG_TARGET_SUBTARGET="ipq60xx"'; do
+              if ! grep -Fqx "$EXPECTED" .config; then
+                echo "::error::Wrong IPQ60XX target configuration: expected $EXPECTED"
+                exit 1
+              fi
+            done
+            grep -Fqx 'CONFIG_DEFAULT_TARGET_qualcommax_ipq60xx=y' .config || {
+              echo "::error::IPQ60XX default target was not selected"
+              exit 1
+            }
+            if grep -Eq '^CONFIG_TARGET_(mediatek|filogic|ramips|ath79|bcm27xx)=' .config; then
+              echo "::error::Unexpected non-Qualcomm target is enabled in $WRT_CONFIG"
+              exit 1
+            fi
+            if ! grep -Eq '^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_.+=y$' "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt"; then
+              echo "::error::No IPQ60XX device profiles are configured for $WRT_CONFIG"
+              exit 1
+            fi
+            while IFS= read -r EXPECTED_DEVICE; do
+              if ! grep -Fqx "$EXPECTED_DEVICE" .config; then
+                echo "::error::IPQ60XX device profile was dropped: $EXPECTED_DEVICE"
+                exit 1
+              fi
+            done < <(grep -E '^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_.+=y$' "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt")
           fi
           for PACKAGE in luci-app-netbird netbird rpcd rpcd-mod-ucode luci-base conntrack kmod-tun; do
             if ! grep -qx "CONFIG_PACKAGE_${PACKAGE}=y" .config; then
@@ -219,7 +263,7 @@ jobs:
         run: |
           cd ./wrt/
 
-          bash "$GITHUB_WORKSPACE/.github/scripts/prepare-rust.sh"
+          $GITHUB_WORKSPACE/.github/scripts/prepare-rust.sh
 
       - name: Prepare eBPF Toolchain
         if: ${{ !inputs.WRT_TEST && contains(inputs.WRT_CONFIG, 'EBPF') }}
@@ -265,20 +309,21 @@ jobs:
         run: |
           cd ./wrt/
 
-          mkdir -p "$GITHUB_WORKSPACE/build-reports"
+          mkdir -p $GITHUB_WORKSPACE/build-reports
           make -j$(nproc) BUILD_TIME_LOG="$GITHUB_WORKSPACE/build-reports/parallel.tsv" || \
             make -j1 V=s BUILD_TIME_LOG="$GITHUB_WORKSPACE/build-reports/serial.tsv"
 
       - name: Collect Build Reports
         if: ${{ !inputs.WRT_TEST && always() }}
+        continue-on-error: true
         run: |
-          if [ -d ./wrt/.git ]; then
-            cd ./wrt/
-            bash "$GITHUB_WORKSPACE/.github/scripts/collect-build-reports.sh"
-          fi
+          cd ./wrt/
+
+          $GITHUB_WORKSPACE/.github/scripts/collect-build-reports.sh
 
       - name: Upload Build Reports
         if: ${{ !inputs.WRT_TEST && always() }}
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: build-reports-${{env.WRT_CONFIG}}-${{env.WRT_INFO}}-${{github.run_attempt}}
