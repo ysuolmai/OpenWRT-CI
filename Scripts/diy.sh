@@ -341,6 +341,16 @@ UPDATE_PACKAGE "xray-core xray-plugin dns2tcp dns2socks haproxy hysteria \
         netdata luci-app-netdata \
         docker shadowsocks-rust" "kenzok8/jell" "main" "pkg"
 
+# kenzok8/jell sets PKG_VERSION to Release48.4 but also prepends "Release"
+# to the source tag and build directory, producing a nonexistent ReleaseRelease48.4.
+SMARTDNS_MK="package/smartdns/Makefile"
+if [ -f "$SMARTDNS_MK" ]; then
+    sed -i \
+        -e 's|codeload.github.com/pymumu/smartdns/tar.gz/Release$(PKG_VERSION)?|codeload.github.com/pymumu/smartdns/tar.gz/$(PKG_VERSION)?|' \
+        -e 's|$(BUILD_DIR)/$(PKG_NAME)-Release$(PKG_VERSION)|$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)|' \
+        "$SMARTDNS_MK"
+fi
+
 # tcping 0.5 intermittently fails when its two objects are built in parallel.
 # Keep this package serial while the rest of the firmware build stays parallel.
 TCPING_MAKEFILE="package/tcping/Makefile"
