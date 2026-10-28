@@ -226,7 +226,14 @@ jobs:
             done
           fi
 
-          make defconfig -j$(nproc) && make clean -j$(nproc)
+          make defconfig -j$(nproc)
+          if [[ "$WRT_CONFIG" == IPQ60XX-* ]]; then
+            # Apply after metadata generation, so even new upstream devices are disabled.
+            python3 "$GITHUB_WORKSPACE/Scripts/qca-device-whitelist.py" apply "$WRT_CONFIG" .config
+            make defconfig -j$(nproc)
+            python3 "$GITHUB_WORKSPACE/Scripts/qca-device-whitelist.py" check "$WRT_CONFIG" .config
+          fi
+          make clean -j$(nproc)
           df -h /
 
           if [[ "$WRT_CONFIG" == IPQ60XX-* ]] && ! grep -qx 'CONFIG_TARGET_MULTI_PROFILE=y' .config; then
@@ -249,16 +256,6 @@ jobs:
               echo "::error::Unexpected non-Qualcomm target is enabled in $WRT_CONFIG"
               exit 1
             fi
-            if ! grep -Eq '^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_.+=y$' "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt"; then
-              echo "::error::No IPQ60XX device profiles are configured for $WRT_CONFIG"
-              exit 1
-            fi
-            while IFS= read -r EXPECTED_DEVICE; do
-              if ! grep -Fqx "$EXPECTED_DEVICE" .config; then
-                echo "::error::IPQ60XX device profile was dropped: $EXPECTED_DEVICE"
-                exit 1
-              fi
-            done < <(grep -E '^CONFIG_TARGET_DEVICE_qualcommax_ipq60xx_DEVICE_.+=y$' "$GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt")
           fi
           for PACKAGE in luci-app-netbird netbird rpcd rpcd-mod-ucode luci-base conntrack kmod-tun; do
             if ! grep -qx "CONFIG_PACKAGE_${PACKAGE}=y" .config; then
