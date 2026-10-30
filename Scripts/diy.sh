@@ -853,6 +853,7 @@ sed -i "/exit 0/i\\
 sed -ri \'/check_signature/s@^[^#]@#&@\' /etc/opkg.conf\n" "package/emortal/default-settings/files/99-default-settings"
 
 install -Dm755 "${GITHUB_WORKSPACE}/Scripts/99_dropbear_setup.sh" "package/base-files/files/etc/uci-defaults/99_dropbear_setup"
+install -Dm755 "${GITHUB_WORKSPACE}/Scripts/99_disable_firewall.sh" "package/base-files/files/etc/uci-defaults/99_disable_firewall"
 
 find ./ -name "getifaddr.c" -exec sed -i 's/return 1;/return 0;/g' {} \;
 
