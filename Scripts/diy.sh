@@ -54,11 +54,18 @@ if [ -f "$BROKEN_UBOOT_PATCH" ]; then
     rm -f "$BROKEN_UBOOT_PATCH"
 fi
 
-# The upstream NFT_BRIDGE package map duplicates this module, which is already
-# correctly packaged by kmod-nf-conntrack-bridge, and makes rootfs installation fail.
+# The upstream NFT_BRIDGE package map duplicates this module. Keep its standalone
+# package dependency while avoiding two packages claiming the same .ko file.
 NETFILTER_MK="include/netfilter.mk"
-if [ -f "$NETFILTER_MK" ] && grep -q 'nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
+NETFILTER_MODULES_MK="package/kernel/linux/modules/netfilter.mk"
+if [[ "$WRT_CONFIG" == IPQ* ]] && \
+   [ -f "$NETFILTER_MK" ] && [ -f "$NETFILTER_MODULES_MK" ] && \
+   grep -q 'nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
     sed -i '/nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE/d' "$NETFILTER_MK"
+    if ! sed -n '/^define KernelPackage\/nft-bridge/,/^endef/p' "$NETFILTER_MODULES_MK" | \
+         grep -q '+kmod-nf-conntrack-bridge'; then
+        sed -i '/^define KernelPackage\/nft-bridge/,/^endef/ s/DEPENDS:=+kmod-nft-core$/DEPENDS:=+kmod-nft-core +kmod-nf-conntrack-bridge/' "$NETFILTER_MODULES_MK"
+    fi
     echo "[upstream-fix] 从 nft-bridge 包映射中移除重复的 nf_conntrack_bridge.ko"
 fi
 
