@@ -54,6 +54,14 @@ if [ -f "$BROKEN_UBOOT_PATCH" ]; then
     rm -f "$BROKEN_UBOOT_PATCH"
 fi
 
+# The upstream NFT_BRIDGE package map duplicates this module, which is already
+# correctly packaged by kmod-nf-conntrack-bridge, and makes rootfs installation fail.
+NETFILTER_MK="include/netfilter.mk"
+if [ -f "$NETFILTER_MK" ] && grep -q 'nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
+    sed -i '/nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE/d' "$NETFILTER_MK"
+    echo "[upstream-fix] 从 nft-bridge 包映射中移除重复的 nf_conntrack_bridge.ko"
+fi
+
 # =======================================================
 # [device-add] 注入 SX 7981R128 设备支持
 # 该设备不在 VIKINGYFY/immortalwrt 源码中，需要本 CI 注入
