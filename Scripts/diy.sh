@@ -54,6 +54,14 @@ if [ -f "$BROKEN_UBOOT_PATCH" ]; then
     rm -f "$BROKEN_UBOOT_PATCH"
 fi
 
+# Upstream hostapd moved the DSCP helper context; this optional backport no
+# longer applies and blocks every wpad-full build when left in the tree.
+HOSTAPD_DSCP_PATCH="package/network/services/hostapd/patches/842-DSCP-Advertise-Wi-Fi-Alliance-Capabilities-element-i.patch"
+if [ -f "$HOSTAPD_DSCP_PATCH" ]; then
+    echo "[upstream-fix] 删除无法匹配当前 hostapd 的 $HOSTAPD_DSCP_PATCH"
+    rm -f "$HOSTAPD_DSCP_PATCH"
+fi
+
 # The upstream NFT_BRIDGE package map duplicates this module. Keep its standalone
 # package dependency while avoiding two packages claiming the same .ko file.
 NETFILTER_MK="include/netfilter.mk"
