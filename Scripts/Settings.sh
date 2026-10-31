@@ -25,6 +25,12 @@ elif [ -f "$WIFI_UC" ]; then
 	sed -i "s/key='.*'/key='$WRT_WORD'/g" $WIFI_UC
 fi
 
+#修改默认WIFI账号密码
+ROUTER_TOOL="./package/emortal/luci-app-router-tool/root/etc/config/router-tool"
+for file in "$ROUTER_TOOL" "$WIFI_UC"; do
+	[ -f "$file" ] && sed -i "s/ssid '.*'/ssid '$WRT_SSID'/g; s/key '.*'/key '$WRT_WORD'/g" "$file"
+done
+
 CFG_FILE="./package/base-files/files/bin/config_generate"
 #修改默认IP地址
 sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $CFG_FILE
