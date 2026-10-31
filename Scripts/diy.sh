@@ -54,41 +54,6 @@ if [ -f "$BROKEN_UBOOT_PATCH" ]; then
     rm -f "$BROKEN_UBOOT_PATCH"
 fi
 
-# Upstream hostapd moved the DSCP helper context; this optional backport no
-# longer applies and blocks every wpad-full build when left in the tree.
-HOSTAPD_DSCP_PATCH="package/network/services/hostapd/patches/842-DSCP-Advertise-Wi-Fi-Alliance-Capabilities-element-i.patch"
-if [ -f "$HOSTAPD_DSCP_PATCH" ]; then
-    echo "[upstream-fix] 删除无法匹配当前 hostapd 的 $HOSTAPD_DSCP_PATCH"
-    rm -f "$HOSTAPD_DSCP_PATCH"
-fi
-
-# The SCS implementation still applies, but its include hunk in 854 is tied to
-# an older include order. Anchor it to the stable PASN header instead.
-HOSTAPD_SCS_PATCH="package/network/services/hostapd/patches/854-hostapd-handle-SCS-Requests-in-AP-mode.patch"
-if [ -f "$HOSTAPD_SCS_PATCH" ]; then
-    python3 - "$HOSTAPD_SCS_PATCH" <<'PY'
-from pathlib import Path
-import sys
-
-patch_file = Path(sys.argv[1])
-patch = patch_file.read_text()
-old = ("@@ -63,6 +63,7 @@\n"
-       " #include \"nan_usd_ap.h\"\n"
-       " #include \"pasn/pasn_common.h\"\n"
-       " #include \"robust_av.h\"\n"
-       "+#include \"scs.h\"\n"
-       " \n"
-       " #ifdef CONFIG_APUP")
-new = ("@@ -64,1 +64,2 @@\n"
-       " #include \"pasn/pasn_common.h\"\n"
-       "+#include \"scs.h\"")
-if old not in patch:
-    raise SystemExit(f"expected include hunk not found in {patch_file}")
-patch_file.write_text(patch.replace(old, new, 1))
-PY
-    echo "[upstream-fix] 已调整 hostapd 854 补丁的 scs.h include 匹配"
-fi
-
 # The upstream NFT_BRIDGE package map duplicates this module. Keep its standalone
 # package dependency while avoiding two packages claiming the same .ko file.
 NETFILTER_MK="include/netfilter.mk"
@@ -595,25 +560,6 @@ done
 
 # shadcn is the only supported LuCI theme.
 sed -i '/^CONFIG_PACKAGE_luci-theme-/d' ./.config
-
-# =======================================================
-# [upstream-fix] hostapd MU-EDCA patch requires CONFIG_IEEE80211AX
-# No-WiFi builds can still compile wpad/hostapd as a dependency, but the
-# hidden DRIVER_11AX_SUPPORT symbol is not selected by any WiFi driver.
-# The upstream MU-EDCA patch then touches struct hostapd_config.he_mu_edca
-# while CONFIG_IEEE80211AX is disabled, which breaks wpad-full-openssl.
-# =======================================================
-if [[ "$WRT_CONFIG" == *"WIFI-NO"* ]]; then
-    HOSTAPD_PATCH_DIR="package/network/services/hostapd/patches"
-    if [ -d "$HOSTAPD_PATCH_DIR" ]; then
-        while IFS= read -r -d '' HOSTAPD_PATCH; do
-            if grep -q "he_mu_edca" "$HOSTAPD_PATCH"; then
-                echo "[upstream-fix] remove no-AX hostapd MU-EDCA patch: $HOSTAPD_PATCH"
-                rm -f "$HOSTAPD_PATCH"
-            fi
-        done < <(find "$HOSTAPD_PATCH_DIR" -type f -name "*.patch" -print0)
-    fi
-fi
 
 # =======================================================
 # [section: package-config] 按构建类型整理软件包配置
