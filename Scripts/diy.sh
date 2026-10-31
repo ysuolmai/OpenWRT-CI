@@ -60,11 +60,20 @@ NETFILTER_MK="include/netfilter.mk"
 NETFILTER_MODULES_MK="package/kernel/linux/modules/netfilter.mk"
 if [[ "$WRT_CONFIG" == IPQ* ]] && \
    [ -f "$NETFILTER_MK" ] && [ -f "$NETFILTER_MODULES_MK" ] && \
-   grep -q 'nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
-    sed -i '/nf_add(NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE/d' "$NETFILTER_MK"
+   grep -q 'nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
+    sed -i '/nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE/d' "$NETFILTER_MK"
+    if grep -q 'nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
+        echo "[upstream-fix] 无法移除重复的 nf_conntrack_bridge.ko 映射"
+        exit 1
+    fi
     if ! sed -n '/^define KernelPackage\/nft-bridge/,/^endef/p' "$NETFILTER_MODULES_MK" | \
          grep -q '+kmod-nf-conntrack-bridge'; then
         sed -i '/^define KernelPackage\/nft-bridge/,/^endef/ s/DEPENDS:=+kmod-nft-core$/DEPENDS:=+kmod-nft-core +kmod-nf-conntrack-bridge/' "$NETFILTER_MODULES_MK"
+    fi
+    if ! sed -n '/^define KernelPackage\/nft-bridge/,/^endef/p' "$NETFILTER_MODULES_MK" | \
+         grep -q '+kmod-nf-conntrack-bridge'; then
+        echo "[upstream-fix] 无法保留 nft-bridge 对 nf-conntrack-bridge 的依赖"
+        exit 1
     fi
     echo "[upstream-fix] 从 nft-bridge 包映射中移除重复的 nf_conntrack_bridge.ko"
 fi
