@@ -62,6 +62,33 @@ if [ -f "$HOSTAPD_DSCP_PATCH" ]; then
     rm -f "$HOSTAPD_DSCP_PATCH"
 fi
 
+# The SCS implementation still applies, but its include hunk in 854 is tied to
+# an older include order. Anchor it to the stable PASN header instead.
+HOSTAPD_SCS_PATCH="package/network/services/hostapd/patches/854-hostapd-handle-SCS-Requests-in-AP-mode.patch"
+if [ -f "$HOSTAPD_SCS_PATCH" ]; then
+    python3 - "$HOSTAPD_SCS_PATCH" <<'PY'
+from pathlib import Path
+import sys
+
+patch_file = Path(sys.argv[1])
+patch = patch_file.read_text()
+old = ("@@ -63,6 +63,7 @@\n"
+       " #include \"nan_usd_ap.h\"\n"
+       " #include \"pasn/pasn_common.h\"\n"
+       " #include \"robust_av.h\"\n"
+       "+#include \"scs.h\"\n"
+       " \n"
+       " #ifdef CONFIG_APUP")
+new = ("@@ -64,1 +64,2 @@\n"
+       " #include \"pasn/pasn_common.h\"\n"
+       "+#include \"scs.h\"")
+if old not in patch:
+    raise SystemExit(f"expected include hunk not found in {patch_file}")
+patch_file.write_text(patch.replace(old, new, 1))
+PY
+    echo "[upstream-fix] 已调整 hostapd 854 补丁的 scs.h include 匹配"
+fi
+
 # The upstream NFT_BRIDGE package map duplicates this module. Keep its standalone
 # package dependency while avoiding two packages claiming the same .ko file.
 NETFILTER_MK="include/netfilter.mk"
