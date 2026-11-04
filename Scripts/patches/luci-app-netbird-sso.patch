@@ -228,7 +228,7 @@ index ac6585a..5740310 100644
  					"do_reconnect",
  					"do_login",
 diff --git a/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc b/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
-index f298c78..5aefc5d 100644
+index f298c78..ce6642d 100644
 --- a/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
 +++ b/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
 @@ -3149,6 +3149,94 @@ function _do_up(req) {
@@ -293,7 +293,7 @@ index f298c78..5aefc5d 100644
 +    if (fd != null) fd.close();
 +    if (length(log) > 8192)
 +        log = substr(log, length(log) - 8192);
-+    let m = match(log, /Use this URL to log in:\s*(https?:\/\/[^\s]+)/);
++    let m = match(log, /Use this URL to log in:[[:space:]]*(https?:\/\/[^[:space:]]+)/);
 +    let url = m ? m[1] : '';
 +    let cm = match(log, /and enter the code ([A-Za-z0-9-]+)/);
 +    let user_code = cm ? cm[1] : '';
