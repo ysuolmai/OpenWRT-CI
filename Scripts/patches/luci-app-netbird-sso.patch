@@ -1,0 +1,343 @@
+diff --git a/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js b/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js
+index 7839cbb..b11b600 100644
+--- a/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js
++++ b/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js
+@@ -20,6 +20,9 @@ var callAuthInfo    = rpc.declare({ object: 'luci.netbird', method: 'get_auth_in
+ var callEnableStart = rpc.declare({ object: 'luci.netbird', method: 'do_enable_and_start' });
+ var callDoUp        = rpc.declare({ object: 'luci.netbird', method: 'do_up',
+ 	params: [ 'management_url', 'setup_key' ] });
++var callStartSSO    = rpc.declare({ object: 'luci.netbird', method: 'do_start_sso',
++	params: [ 'management_url' ] });
++var callSsoStatus   = rpc.declare({ object: 'luci.netbird', method: 'get_sso_status' });
+ var callDoDown      = rpc.declare({ object: 'luci.netbird', method: 'do_down' });
+ var callDoReconnect = rpc.declare({ object: 'luci.netbird', method: 'do_reconnect' });
+ var callDoLogout    = rpc.declare({ object: 'luci.netbird', method: 'do_logout',
+@@ -252,6 +255,95 @@ return view.extend({
+ 		return runAction(btn, p, _('Connected to NetBird.'), _('Connection failed.'));
+ 	},
+ 
++	handleSSO: function (ev) {
++		var self = this;
++		var btn = ev.currentTarget;
++		var urlEl = document.getElementById('nb-mgmt-url');
++		var mgmtUrl = urlEl ? String(urlEl.value || '').trim() : '';
++		btn.classList.add('spinning');
++		btn.disabled = true;
++		this._withRpcTimeout(180, function () { return callStartSSO(mgmtUrl); }).then(function (res) {
++			if (!res || !res.ok) {
++				ui.addNotification(null, E('p', {}, responseMessage(res, _('Could not start SSO login.'))), 'error');
++				btn.classList.remove('spinning');
++				btn.disabled = false;
++				return;
++			}
++
++			self._nbSsoDialogOpen = true;
++			var body = E('div', {}, [
++				E('p', { 'id': 'nb-sso-status' }, _('Waiting for the sign-in link from NetBird...')),
++				E('p', {}, E('a', {
++					'id': 'nb-sso-link', 'href': '#', 'target': '_blank',
++					'rel': 'noopener noreferrer', 'style': 'display:none'
++				}, _('Open company sign-in page'))),
++				E('p', { 'id': 'nb-sso-code', 'style': 'display:none' }),
++				E('div', { 'class': 'right' }, E('button', {
++					'class': 'btn', 'click': function () {
++						self._nbSsoDialogOpen = false;
++						ui.hideModal();
++						btn.classList.remove('spinning');
++						btn.disabled = false;
++					}
++				}, _('Close')))
++			]);
++			ui.showModal(_('Sign in with your company account'), body);
++
++			var poll = function () {
++				if (!self._nbSsoDialogOpen)
++					return;
++				callSsoStatus().then(function (state) {
++					if (!self._nbSsoDialogOpen)
++						return;
++					var statusEl = document.getElementById('nb-sso-status');
++					var linkEl = document.getElementById('nb-sso-link');
++					var codeEl = document.getElementById('nb-sso-code');
++					if (state && state.ok && state.data && state.data.connected) {
++						self._nbSsoDialogOpen = false;
++						ui.hideModal();
++						ui.addNotification(null, E('p', {}, _('Connected to NetBird.')), 'info');
++						location.reload();
++						return;
++					}
++					if (!state || !state.ok) {
++						if (statusEl) statusEl.textContent = _(state && state.message || 'SSO login failed.');
++						btn.classList.remove('spinning');
++						btn.disabled = false;
++						return;
++					}
++					if (!state.data || !state.data.pending) {
++						if (statusEl) statusEl.textContent = _('No SSO login is running. Close this window and try again.');
++						btn.classList.remove('spinning');
++						btn.disabled = false;
++						return;
++					}
++					if (state.data.url && linkEl) {
++						linkEl.href = state.data.url;
++						linkEl.style.display = '';
++						if (statusEl) statusEl.textContent = _('Open the sign-in page and complete your company authentication.');
++					}
++					if (state.data.user_code && codeEl) {
++						codeEl.textContent = _('If asked, enter this code:') + ' ' + state.data.user_code;
++						codeEl.style.display = '';
++					}
++					window.setTimeout(poll, 2000);
++				}).catch(function (e) {
++					if (!self._nbSsoDialogOpen)
++						return;
++					var statusEl = document.getElementById('nb-sso-status');
++					if (statusEl) statusEl.textContent = exceptionMessage(e, _('Could not check SSO login status.'));
++					btn.classList.remove('spinning');
++					btn.disabled = false;
++				});
++			};
++			poll();
++		}).catch(function (e) {
++			ui.addNotification(null, E('p', {}, exceptionMessage(e, _('Could not start SSO login.'))), 'error');
++			btn.classList.remove('spinning');
++			btn.disabled = false;
++		});
++	},
++
+ 	// 「断开」回调：do_down（保留认证，仅断当前会话）。
+ 	handleDisconnect: function (ev) {
+ 		return runAction(ev.currentTarget, callDoDown(),
+@@ -347,7 +439,7 @@ return view.extend({
+ 		});
+ 	},
+ 
+-	// 认证表单：管理 URL（预填实际 URL，可编辑）+ Setup Key（password，始终留空）+ 连接按钮。
++	// 认证表单：管理 URL（预填实际 URL，可编辑）+ Setup Key（password，始终留空）+ 连接/SSO 按钮。
+ 	// 改动 2：
+ 	//   - 管理 URL value 预填 get_auth_info 给的实际 URL（断开态也显示已保存的实际 URL）。
+ 	//   - Setup Key 输入框保持空（供输入新 key，避免误提交打码串）；若有 setup_key_hint，
+@@ -429,7 +521,12 @@ return view.extend({
+ 					E('button', {
+ 						'class': 'btn cbi-button cbi-button-action',
+ 						'click': ui.createHandlerFn(this, 'handleConnect')
+-					}, _('Connect'))
++					}, _('Connect')),
++					' ',
++					E('button', {
++						'class': 'btn cbi-button cbi-button-action',
++						'click': ui.createHandlerFn(this, 'handleSSO')
++					}, _('Sign in with SSO')),
+ 				])
+ 			])
+ 		);
+diff --git a/luci-app-netbird/po/templates/netbird.pot b/luci-app-netbird/po/templates/netbird.pot
+index 0e84737..62f715b 100644
+--- a/luci-app-netbird/po/templates/netbird.pot
++++ b/luci-app-netbird/po/templates/netbird.pot
+@@ -1667,3 +1667,33 @@ msgstr ""
+ 
+ msgid "Details"
+ msgstr ""
++
++msgid "Sign in with SSO"
++msgstr ""
++
++msgid "Could not start SSO login."
++msgstr ""
++
++msgid "Waiting for the sign-in link from NetBird..."
++msgstr ""
++
++msgid "Open company sign-in page"
++msgstr ""
++
++msgid "Sign in with your company account"
++msgstr ""
++
++msgid "SSO login failed."
++msgstr ""
++
++msgid "No SSO login is running. Close this window and try again."
++msgstr ""
++
++msgid "Open the sign-in page and complete your company authentication."
++msgstr ""
++
++msgid "If asked, enter this code:"
++msgstr ""
++
++msgid "Could not check SSO login status."
++msgstr ""
+diff --git a/luci-app-netbird/po/zh_Hans/netbird.po b/luci-app-netbird/po/zh_Hans/netbird.po
+index 5a2236f..45da08c 100644
+--- a/luci-app-netbird/po/zh_Hans/netbird.po
++++ b/luci-app-netbird/po/zh_Hans/netbird.po
+@@ -1214,3 +1214,33 @@ msgstr "NetBird 0.76.1 之前的版本，本地服务 socket 存在安全问题
+ 
+ msgid "Details"
+ msgstr "详情"
++
++msgid "Sign in with SSO"
++msgstr "使用 SSO 登录"
++
++msgid "Could not start SSO login."
++msgstr "无法启动 SSO 登录。"
++
++msgid "Waiting for the sign-in link from NetBird..."
++msgstr "正在等待 NetBird 提供登录链接……"
++
++msgid "Open company sign-in page"
++msgstr "打开公司登录页面"
++
++msgid "Sign in with your company account"
++msgstr "使用公司账户登录"
++
++msgid "SSO login failed."
++msgstr "SSO 登录失败。"
++
++msgid "No SSO login is running. Close this window and try again."
++msgstr "当前没有正在进行的 SSO 登录。请关闭此窗口后重试。"
++
++msgid "Open the sign-in page and complete your company authentication."
++msgstr "打开登录页面并完成公司账户认证。"
++
++msgid "If asked, enter this code:"
++msgstr "如页面要求，请输入此代码："
++
++msgid "Could not check SSO login status."
++msgstr "无法检查 SSO 登录状态。"
+diff --git a/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json b/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json
+index ac6585a..5740310 100644
+--- a/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json
++++ b/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json
+@@ -15,6 +15,7 @@
+ 					"get_binary_info",
+ 					"get_binary_update_progress",
+ 					"get_auth_info",
++					"get_sso_status",
+ 					"check_luci_app_update",
+ 					"list_exit_nodes"
+ 				]
+@@ -25,6 +26,7 @@
+ 			"ubus": {
+ 				"luci.netbird": [
+ 					"do_up",
++					"do_start_sso",
+ 					"do_down",
+ 					"do_reconnect",
+ 					"do_login",
+diff --git a/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc b/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
+index f298c78..5aefc5d 100644
+--- a/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
++++ b/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
+@@ -3149,6 +3149,94 @@ function _do_up(req) {
+         'Check the Logs tab for the last NetBird message, then try again.');
+ }
+ 
++const _NB_SSO_LOG = '/tmp/luci-netbird-sso.log';
++const _NB_SSO_PID = '/tmp/luci-netbird-sso.pid';
++const _NB_SSO_EXIT = '/tmp/luci-netbird-sso.exit';
++
++function _do_start_sso(req) {
++    let a = (req != null && req.args != null) ? req.args : (req || {});
++    let arg_url = (type(a.management_url) == 'string') ? a.management_url : '';
++    let mr = _resolve_mgmt_url(arg_url);
++    if (!mr.ok)
++        return err(CODE.INVALID_INPUT, mr.message);
++    if (access(_NB_SSO_PID, 'f')) {
++        let old_pid = trim(_read_small_text(_NB_SSO_PID));
++        if (_pid_runs(old_pid, 'netbird'))
++            return ok({ started: true });
++    }
++    _set_desired_connected(false);
++    _ensure_helper_services();
++    if (length(arg_url) > 0)
++        _persist_mgmt_url(arg_url);
++    _ensure_configured_binary();
++    let bin = resolve_netbird_bin();
++    if (bin == null)
++        return err(CODE.NOT_INSTALLED, 'The netbird binary is not installed.');
++
++    unlink(_NB_SSO_LOG);
++    unlink(_NB_SSO_EXIT);
++    let auth_cmd = _build_auth_cmd(bin, 'up', mr.url, '');
++    let cmd = 'umask 077; ( ' + auth_cmd + ' & __nbp=$!; __nbi=0; ' +
++        'while [ $__nbi -lt 600 ] && kill -0 $__nbp 2>/dev/null; do sleep 1; __nbi=$((__nbi+1)); done; ' +
++        'if kill -0 $__nbp 2>/dev/null; then kill -TERM $__nbp 2>/dev/null; sleep 1; kill -KILL $__nbp 2>/dev/null; fi; ' +
++        'wait $__nbp 2>/dev/null; __nb_rc=$?; echo $__nb_rc > ' + shell_quote(_NB_SSO_EXIT) +
++        ' ) </dev/null > ' + shell_quote(_NB_SSO_LOG) + ' 2>&1 & echo $!';
++    let started = _popen_simple(cmd);
++    let pid = trim(started.out);
++    if (!match(pid, /^[0-9]+$/))
++        return err(CODE.CONNECT_FAILED, 'Could not start the NetBird SSO login process.');
++    let fd = open(_NB_SSO_PID, 'w');
++    if (fd == null) {
++        _popen_simple('kill ' + shell_quote(pid) + ' 2>/dev/null');
++        return err(CODE.CONNECT_FAILED, 'Could not record the NetBird SSO login process.');
++    }
++    fd.write(pid);
++    fd.close();
++    _clear_runtime_error();
++    return ok({ started: true });
++}
++
++function _do_get_sso_status() {
++    if (!access(_NB_SSO_PID, 'f'))
++        return ok({ pending: false, url: '' });
++    let bin = resolve_netbird_bin();
++    if (bin == null)
++        return err(CODE.NOT_INSTALLED, 'The netbird binary is not installed.');
++    let fd = open(_NB_SSO_LOG, 'r');
++    let log = (fd != null) ? (fd.read('all') || '') : '';
++    if (fd != null) fd.close();
++    if (length(log) > 8192)
++        log = substr(log, length(log) - 8192);
++    let m = match(log, /Use this URL to log in:\s*(https?:\/\/[^\s]+)/);
++    let url = m ? m[1] : '';
++    let cm = match(log, /and enter the code ([A-Za-z0-9-]+)/);
++    let user_code = cm ? cm[1] : '';
++    let status = fetch_status_json(bin);
++    if (status.ok && status.data.management != null && status.data.management.connected) {
++        unlink(_NB_SSO_PID); unlink(_NB_SSO_EXIT); unlink(_NB_SSO_LOG);
++        _set_desired_connected(true);
++        _clear_runtime_error();
++        _apply_pending_settings();
++        return ok({ connected: true });
++    }
++    if (access(_NB_SSO_EXIT, 'f')) {
++        let rc = trim(_read_small_text(_NB_SSO_EXIT));
++        unlink(_NB_SSO_PID); unlink(_NB_SSO_EXIT); unlink(_NB_SSO_LOG);
++        _set_desired_connected(false);
++        let message = 'NetBird SSO login ended before the device connected.';
++        _persist_runtime_error(message);
++        return err(CODE.CONNECT_FAILED, message, (length(log) > 0) ? substr(log, 0, 1000) : rc);
++    }
++    let pid = trim(_read_small_text(_NB_SSO_PID));
++    if (!_pid_runs(pid, 'netbird')) {
++        unlink(_NB_SSO_PID); unlink(_NB_SSO_LOG);
++        let message = 'The NetBird SSO login process stopped unexpectedly.';
++        _persist_runtime_error(message);
++        return err(CODE.CONNECT_FAILED, message);
++    }
++    return ok({ pending: true, url: url, user_code: user_code });
++}
++
+ // _do_reconnect() — 在一次 RPC 内完成 down → up（空 key，沿用已有身份）。
+ // 不能由前端串联 do_down + do_up：经 NetBird 隧道访问 LuCI 时，down 会切断承载后续请求的
+ // 通道，第二个 RPC 到不了路由器；且 do_down 会把 desired_connected 清 0，watchdog 也不会恢复，
+@@ -3399,6 +3487,14 @@ return {
+             args: { management_url: '', setup_key: '', caller: '' },
+             call: _safe(_do_up),
+         },
++        do_start_sso: {
++            args: { management_url: '' },
++            call: _safe(_do_start_sso),
++        },
++        get_sso_status: {
++            args: {},
++            call: _safe(_do_get_sso_status),
++        },
+ 
+         // do_down — 仅断开当前会话，保留认证（与 do_logout 语义区别）。
+         // 幂等：本就断开也算成功（netbird down 在未连态退 0 或可忽略错误）。

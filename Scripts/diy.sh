@@ -346,6 +346,8 @@ UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "main"
 # Keep the repository: pkg extraction would delete the identically named package.
 UPDATE_PACKAGE "luci-app-netbird" "looong-cat/luci-app-netbird" "main"
 test -f package/luci-app-netbird/luci-app-netbird/Makefile || exit 1
+git -C package/luci-app-netbird apply "$GITHUB_WORKSPACE/Scripts/patches/luci-app-netbird-sso.patch" || exit 1
+echo "[diy] 已为 luci-app-netbird 启用浏览器 SSO 登录"
 #UPDATE_PACKAGE "openwrt-gecoosac" "ysuolmai/openwrt-gecoosac" "main"
 # gecoosac 上游作者 (kiss19776) 经常覆盖同名 release asset，PKG_HASH 跟不上
 # 把 PKG_HASH:=xxxxx 改成 PKG_HASH:=skip 跳过校验
