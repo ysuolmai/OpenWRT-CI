@@ -73,7 +73,7 @@ UPDATE_PACKAGE "easytier" "EasyTier/luci-app-easytier" "main"
 UPDATE_PACKAGE "qmodem" "FUjr/QModem" "main"
 UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
 UPDATE_PACKAGE "timecontrol" "sirpdboy/luci-app-timecontrol" "main"
-UPDATE_PACKAGE "viking" "VIKINGYFY/packages" "main" "" "axonhub gecoosac miniupnpd luci-app-timewol luci-app-upnp luci-app-wolplus luci-app-wolultra"
+UPDATE_PACKAGE "viking" "VIKINGYFY/packages" "main" "" "axonhub gecoosac miniupnpd sing-box luci-app-homeproxy luci-app-timewol luci-app-upnp luci-app-wolplus luci-app-wolultra"
 # HomeProxy and its matching sing-box are supplied later by the maintained
 # ysuolmai/openwrt-packages collection in diy.sh.
 [ ! -d ./packages ] || find ./packages -maxdepth 3 -type d \( -iname '*homeproxy*' -o -iname '*sing-box*' \) -prune -exec rm -rf {} +
