@@ -1,9 +1,8 @@
 diff --git a/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js b/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js
-index 7839cbb..b11b600 100644
+index c9e36fb..c6227fb 100644
 --- a/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js
 +++ b/luci-app-netbird/htdocs/luci-static/resources/view/netbird/overview.js
-@@ -20,6 +20,9 @@ var callAuthInfo    = rpc.declare({ object: 'luci.netbird', method: 'get_auth_in
- var callEnableStart = rpc.declare({ object: 'luci.netbird', method: 'do_enable_and_start' });
+@@ -21,4 +21,7 @@ var callEnableStart = rpc.declare({ object: 'luci.netbird', method: 'do_enable_a
  var callDoUp        = rpc.declare({ object: 'luci.netbird', method: 'do_up',
  	params: [ 'management_url', 'setup_key' ] });
 +var callStartSSO    = rpc.declare({ object: 'luci.netbird', method: 'do_start_sso',
@@ -11,9 +10,7 @@ index 7839cbb..b11b600 100644
 +var callSsoStatus   = rpc.declare({ object: 'luci.netbird', method: 'get_sso_status' });
  var callDoDown      = rpc.declare({ object: 'luci.netbird', method: 'do_down' });
  var callDoReconnect = rpc.declare({ object: 'luci.netbird', method: 'do_reconnect' });
- var callDoLogout    = rpc.declare({ object: 'luci.netbird', method: 'do_logout',
-@@ -252,6 +255,95 @@ return view.extend({
- 		return runAction(btn, p, _('Connected to NetBird.'), _('Connection failed.'));
+@@ -283,4 +286,93 @@ return view.extend({
  	},
  
 +	handleSSO: function (ev) {
@@ -107,18 +104,14 @@ index 7839cbb..b11b600 100644
 +
  	// 「断开」回调：do_down（保留认证，仅断当前会话）。
  	handleDisconnect: function (ev) {
- 		return runAction(ev.currentTarget, callDoDown(),
-@@ -347,7 +439,7 @@ return view.extend({
- 		});
+@@ -379,5 +471,5 @@ return view.extend({
  	},
  
 -	// 认证表单：管理 URL（预填实际 URL，可编辑）+ Setup Key（password，始终留空）+ 连接按钮。
 +	// 认证表单：管理 URL（预填实际 URL，可编辑）+ Setup Key（password，始终留空）+ 连接/SSO 按钮。
  	// 改动 2：
  	//   - 管理 URL value 预填 get_auth_info 给的实际 URL（断开态也显示已保存的实际 URL）。
- 	//   - Setup Key 输入框保持空（供输入新 key，避免误提交打码串）；若有 setup_key_hint，
-@@ -429,7 +521,12 @@ return view.extend({
- 					E('button', {
+@@ -461,5 +553,10 @@ return view.extend({
  						'class': 'btn cbi-button cbi-button-action',
  						'click': ui.createHandlerFn(this, 'handleConnect')
 -					}, _('Connect'))
@@ -130,14 +123,12 @@ index 7839cbb..b11b600 100644
 +					}, _('Sign in with SSO')),
  				])
  			])
- 		);
 diff --git a/luci-app-netbird/po/templates/netbird.pot b/luci-app-netbird/po/templates/netbird.pot
-index 0e84737..62f715b 100644
+index d72a5a0..155cbf0 100644
 --- a/luci-app-netbird/po/templates/netbird.pot
 +++ b/luci-app-netbird/po/templates/netbird.pot
-@@ -1667,3 +1667,33 @@ msgstr ""
- 
- msgid "Details"
+@@ -1677,2 +1677,32 @@ msgstr ""
+ msgid "Saved settings are not active yet. They will be applied the next time NetBird connects."
  msgstr ""
 +
 +msgid "Sign in with SSO"
@@ -170,13 +161,12 @@ index 0e84737..62f715b 100644
 +msgid "Could not check SSO login status."
 +msgstr ""
 diff --git a/luci-app-netbird/po/zh_Hans/netbird.po b/luci-app-netbird/po/zh_Hans/netbird.po
-index 5a2236f..45da08c 100644
+index ecc23df..07e1942 100644
 --- a/luci-app-netbird/po/zh_Hans/netbird.po
 +++ b/luci-app-netbird/po/zh_Hans/netbird.po
-@@ -1214,3 +1214,33 @@ msgstr "NetBird 0.76.1 之前的版本，本地服务 socket 存在安全问题
- 
- msgid "Details"
- msgstr "详情"
+@@ -1221,2 +1221,32 @@ msgstr "配置的来源是 NetBird-Release，但本机没有它的二进制（
+ msgid "Saved settings are not active yet. They will be applied the next time NetBird connects."
+ msgstr "已保存的设置尚未生效，将在 NetBird 下次连接成功后应用。"
 +
 +msgid "Sign in with SSO"
 +msgstr "使用 SSO 登录"
@@ -211,28 +201,23 @@ diff --git a/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json b/
 index ac6585a..5740310 100644
 --- a/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json
 +++ b/luci-app-netbird/root/usr/share/rpcd/acl.d/luci-app-netbird.json
-@@ -15,6 +15,7 @@
- 					"get_binary_info",
+@@ -16,4 +16,5 @@
  					"get_binary_update_progress",
  					"get_auth_info",
 +					"get_sso_status",
  					"check_luci_app_update",
  					"list_exit_nodes"
- 				]
-@@ -25,6 +26,7 @@
- 			"ubus": {
+@@ -26,4 +27,5 @@
  				"luci.netbird": [
  					"do_up",
 +					"do_start_sso",
  					"do_down",
  					"do_reconnect",
- 					"do_login",
 diff --git a/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc b/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
-index f298c78..ce6642d 100644
+index 34c3c9b..e10ac25 100644
 --- a/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
 +++ b/luci-app-netbird/root/usr/share/rpcd/ucode/netbird.uc
-@@ -3149,6 +3149,94 @@ function _do_up(req) {
-         'Check the Logs tab for the last NetBird message, then try again.');
+@@ -3169,4 +3169,92 @@ function _do_up(req) {
  }
  
 +const _NB_SSO_LOG = '/tmp/luci-netbird-sso.log';
@@ -325,9 +310,7 @@ index f298c78..ce6642d 100644
 +
  // _do_reconnect() — 在一次 RPC 内完成 down → up（空 key，沿用已有身份）。
  // 不能由前端串联 do_down + do_up：经 NetBird 隧道访问 LuCI 时，down 会切断承载后续请求的
- // 通道，第二个 RPC 到不了路由器；且 do_down 会把 desired_connected 清 0，watchdog 也不会恢复，
-@@ -3399,6 +3487,14 @@ return {
-             args: { management_url: '', setup_key: '', caller: '' },
+@@ -3420,4 +3508,12 @@ return {
              call: _safe(_do_up),
          },
 +        do_start_sso: {
@@ -340,4 +323,3 @@ index f298c78..ce6642d 100644
 +        },
  
          // do_down — 仅断开当前会话，保留认证（与 do_logout 语义区别）。
-         // 幂等：本就断开也算成功（netbird down 在未连态退 0 或可忽略错误）。

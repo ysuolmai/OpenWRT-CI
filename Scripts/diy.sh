@@ -345,6 +345,10 @@ UPDATE_PACKAGE() {
 UPDATE_PACKAGE "luci-app-poweroff" "esirplayground/luci-app-poweroff" "main"
 # Keep the repository: pkg extraction would delete the identically named package.
 UPDATE_PACKAGE "luci-app-netbird" "looong-cat/luci-app-netbird" "main"
+# Keep the source and SSO patch in sync; update this revision with the patch.
+NETBIRD_REV=de70650ff79abd24b114c045473cf16f118a3957
+git -C package/luci-app-netbird fetch --depth=1 origin "$NETBIRD_REV" || exit 1
+git -C package/luci-app-netbird checkout --detach "$NETBIRD_REV" || exit 1
 test -f package/luci-app-netbird/luci-app-netbird/Makefile || exit 1
 git -C package/luci-app-netbird apply "$GITHUB_WORKSPACE/Scripts/patches/luci-app-netbird-sso.patch" || exit 1
 echo "[diy] 已为 luci-app-netbird 启用浏览器 SSO 登录"
