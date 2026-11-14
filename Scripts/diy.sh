@@ -54,12 +54,11 @@ if [ -f "$BROKEN_UBOOT_PATCH" ]; then
     rm -f "$BROKEN_UBOOT_PATCH"
 fi
 
-# The upstream NFT_BRIDGE package map duplicates this module. Keep its standalone
-# package dependency while avoiding two packages claiming the same .ko file.
+# Some upstream targets duplicate this module in the NFT_BRIDGE package map.
+# Keep its standalone dependency while avoiding two packages claiming the same .ko.
 NETFILTER_MK="include/netfilter.mk"
 NETFILTER_MODULES_MK="package/kernel/linux/modules/netfilter.mk"
-if [[ "$WRT_CONFIG" == IPQ* ]] && \
-   [ -f "$NETFILTER_MK" ] && [ -f "$NETFILTER_MODULES_MK" ] && \
+if [ -f "$NETFILTER_MK" ] && [ -f "$NETFILTER_MODULES_MK" ] && \
    grep -q 'nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
     sed -i '/nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE/d' "$NETFILTER_MK"
     if grep -q 'nf_add,NFT_BRIDGE,CONFIG_NF_CONNTRACK_BRIDGE' "$NETFILTER_MK"; then
